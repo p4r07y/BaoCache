@@ -3,6 +3,9 @@
 Stable RC is blocked until every required gate below has a recorded result. A
 missing result is not a PASS.
 
+Use [the staging acceptance runbook](BAOCACHE-STAGING-ACCEPTANCE-RUNBOOK.md) to
+collect the manual evidence required by the Open gates.
+
 | Gate | Required evidence | Status |
 | --- | --- | --- |
 | Clean install | Fresh WordPress activates BaoCache, opens the dashboard and removes only registered BaoCache data according to the selected uninstall policy. | Open |
