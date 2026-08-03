@@ -88,7 +88,7 @@ the target deployment.
 | Milestone | Status | Implementation boundary | Required evidence |
 | --- | --- | --- | --- |
 | beta78 — Automatic Resource & Font Hints | Delivered in beta | Derive bounded cross-origin origin/font recommendations from observed Asset Inventory evidence; cap hints; never blind-preload | Evidence fingerprint, recommendation diff, apply/rollback and cache invalidation implemented; staging probe remains open |
-| beta79 — Third-party Optimizer | Planned | Handle/dependency-aware classification and delay/consent/context rules | Browser compatibility matrix and rollback |
+| beta79 — Third-party Optimizer | In progress | Handle/dependency-aware classification and conservative delay recommendations for independent third-party scripts | Evidence fingerprint, review-required risk labels, apply/rollback and browser compatibility matrix |
 | Stable RC | Blocked by acceptance | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
 
 No milestone is considered delivered when only UI or source code exists; it

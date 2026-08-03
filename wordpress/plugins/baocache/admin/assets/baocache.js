@@ -88,6 +88,10 @@
 	const resourceHintApplyButton = document.querySelector('[data-baocache-apply-resource-hints]');
 	const resourceHintRollbackButton = document.querySelector('[data-baocache-rollback-resource-hints]');
 	const resourceHintResult = document.querySelector('[data-baocache-resource-hints-result]');
+	const thirdPartyScanButton = document.querySelector('[data-baocache-scan-third-party]');
+	const thirdPartyApplyButton = document.querySelector('[data-baocache-apply-third-party]');
+	const thirdPartyRollbackButton = document.querySelector('[data-baocache-rollback-third-party]');
+	const thirdPartyResult = document.querySelector('[data-baocache-third-party-result]');
 	const retentionKeep = document.querySelector('[data-baocache-retention-keep]');
 	const retentionHistory = document.querySelector('[data-baocache-retention-history]');
 	const retentionRemove = document.querySelector('[data-baocache-retention-remove]');
@@ -802,6 +806,42 @@
 				showToast(data.message || 'Đã rollback Resource Hints.');
 			} catch (error) { showToast(error.message || 'Không thể rollback Resource Hints.', { error: true }); }
 			finally { resourceHintRollbackButton.disabled = false; }
+		});
+	}
+
+	if (thirdPartyScanButton && window.BaoCacheAdmin) {
+		thirdPartyScanButton.addEventListener('click', async () => {
+			thirdPartyScanButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_scan_third_party', nonce: BaoCacheAdmin.thirdPartyScanNonce }, 'Không thể phân tích third-party script.');
+				if (thirdPartyResult) thirdPartyResult.textContent = `${data.count} candidate · fingerprint ${String(data.fingerprint).slice(0, 12)}. Tải lại trang để apply.`;
+				showToast('Đã tạo third-party recommendation.');
+			} catch (error) { showToast(error.message || 'Không thể phân tích third-party script.', { error: true }); }
+			finally { thirdPartyScanButton.disabled = false; }
+		});
+	}
+
+	if (thirdPartyApplyButton && window.BaoCacheAdmin) {
+		thirdPartyApplyButton.addEventListener('click', async () => {
+			thirdPartyApplyButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_apply_third_party', nonce: BaoCacheAdmin.thirdPartyApplyNonce, fingerprint: thirdPartyApplyButton.dataset.fingerprint || '' }, 'Không thể apply third-party delay.');
+				if (thirdPartyResult) thirdPartyResult.textContent = data.message || 'Đã apply.';
+				showToast(data.message || 'Đã apply third-party delay.');
+			} catch (error) { showToast(error.message || 'Không thể apply third-party delay.', { error: true }); }
+			finally { thirdPartyApplyButton.disabled = false; }
+		});
+	}
+
+	if (thirdPartyRollbackButton && window.BaoCacheAdmin) {
+		thirdPartyRollbackButton.addEventListener('click', async () => {
+			thirdPartyRollbackButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_rollback_third_party', nonce: BaoCacheAdmin.thirdPartyRollbackNonce }, 'Không thể rollback third-party delay.');
+				if (thirdPartyResult) thirdPartyResult.textContent = data.message || 'Đã rollback.';
+				showToast(data.message || 'Đã rollback third-party delay.');
+			} catch (error) { showToast(error.message || 'Không thể rollback third-party delay.', { error: true }); }
+			finally { thirdPartyRollbackButton.disabled = false; }
 		});
 	}
 

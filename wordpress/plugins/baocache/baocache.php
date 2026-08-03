@@ -39,6 +39,7 @@ require_once BAOCACHE_PATH . 'includes/class-analytics.php';
 require_once BAOCACHE_PATH . 'includes/class-csp.php';
 require_once BAOCACHE_PATH . 'includes/class-critical-images.php';
 require_once BAOCACHE_PATH . 'includes/class-resource-hints.php';
+require_once BAOCACHE_PATH . 'includes/class-third-party-optimizer.php';
 require_once BAOCACHE_PATH . 'includes/class-admin.php';
 require_once BAOCACHE_PATH . 'includes/class-render-blocking.php';
 require_once BAOCACHE_PATH . 'includes/class-plugin.php';

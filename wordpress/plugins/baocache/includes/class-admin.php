@@ -50,6 +50,9 @@ final class BaoCache_Admin {
 	private const string RESOURCE_HINT_SCAN_ACTION = 'baocache_scan_resource_hints';
 	private const string RESOURCE_HINT_APPLY_ACTION = 'baocache_apply_resource_hints';
 	private const string RESOURCE_HINT_ROLLBACK_ACTION = 'baocache_rollback_resource_hints';
+	private const string THIRD_PARTY_SCAN_ACTION = 'baocache_scan_third_party';
+	private const string THIRD_PARTY_APPLY_ACTION = 'baocache_apply_third_party';
+	private const string THIRD_PARTY_ROLLBACK_ACTION = 'baocache_rollback_third_party';
 	private const string DATABASE_CHECK_ACTION = 'baocache_database_check';
 	private const string DATABASE_REPAIR_ACTION = 'baocache_database_repair';
 	private const string DATABASE_CLEAN_ACTION = 'baocache_database_clean_runtime';
@@ -104,6 +107,9 @@ final class BaoCache_Admin {
 		add_action( 'wp_ajax_' . self::RESOURCE_HINT_SCAN_ACTION, array( $this, 'scan_resource_hints_ajax' ) );
 		add_action( 'wp_ajax_' . self::RESOURCE_HINT_APPLY_ACTION, array( $this, 'apply_resource_hints_ajax' ) );
 		add_action( 'wp_ajax_' . self::RESOURCE_HINT_ROLLBACK_ACTION, array( $this, 'rollback_resource_hints_ajax' ) );
+		add_action( 'wp_ajax_' . self::THIRD_PARTY_SCAN_ACTION, array( $this, 'scan_third_party_ajax' ) );
+		add_action( 'wp_ajax_' . self::THIRD_PARTY_APPLY_ACTION, array( $this, 'apply_third_party_ajax' ) );
+		add_action( 'wp_ajax_' . self::THIRD_PARTY_ROLLBACK_ACTION, array( $this, 'rollback_third_party_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_CHECK_ACTION, array( $this, 'database_check_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_REPAIR_ACTION, array( $this, 'database_repair_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_CLEAN_ACTION, array( $this, 'database_clean_runtime_ajax' ) );
@@ -224,6 +230,9 @@ final class BaoCache_Admin {
 			'resourceHintScanNonce' => wp_create_nonce( self::RESOURCE_HINT_SCAN_ACTION ),
 			'resourceHintApplyNonce' => wp_create_nonce( self::RESOURCE_HINT_APPLY_ACTION ),
 			'resourceHintRollbackNonce' => wp_create_nonce( self::RESOURCE_HINT_ROLLBACK_ACTION ),
+			'thirdPartyScanNonce' => wp_create_nonce( self::THIRD_PARTY_SCAN_ACTION ),
+			'thirdPartyApplyNonce' => wp_create_nonce( self::THIRD_PARTY_APPLY_ACTION ),
+			'thirdPartyRollbackNonce' => wp_create_nonce( self::THIRD_PARTY_ROLLBACK_ACTION ),
 			'databaseCheckNonce' => wp_create_nonce( self::DATABASE_CHECK_ACTION ),
 			'databaseRepairNonce' => wp_create_nonce( self::DATABASE_REPAIR_ACTION ),
 			'databaseCleanNonce' => wp_create_nonce( self::DATABASE_CLEAN_ACTION ),
@@ -709,6 +718,36 @@ final class BaoCache_Admin {
 		$this->queue_frontend_cache_invalidation();
 		BaoCache_Activity::log( 'resource_hints_rollback', 'success', __( 'Đã rollback Resource & Font Hints.', 'baocache' ) );
 		wp_send_json_success( array( 'message' => __( 'Đã rollback Resource & Font Hints về cấu hình trước đó.', 'baocache' ) ) );
+	}
+
+	public function scan_third_party_ajax(): void {
+		check_ajax_referer( self::THIRD_PARTY_SCAN_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền phân tích third-party script.', 'baocache' ) ), 403 );
+		$result = BaoCache_Third_Party_Optimizer::scan();
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		BaoCache_Activity::log( 'third_party_scan', 'success', __( 'Đã phân tích third-party script từ Asset Inventory evidence.', 'baocache' ), array( 'candidates' => (string) $result['candidate_count'], 'fingerprint' => substr( (string) $result['fingerprint'], 0, 12 ) ) );
+		wp_send_json_success( array( 'count' => (int) $result['candidate_count'], 'fingerprint' => (string) $result['fingerprint'] ) );
+	}
+
+	public function apply_third_party_ajax(): void {
+		check_ajax_referer( self::THIRD_PARTY_APPLY_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền apply third-party delay.', 'baocache' ) ), 403 );
+		$fingerprint = sanitize_text_field( (string) wp_unslash( $_POST['fingerprint'] ?? '' ) );
+		$result = BaoCache_Third_Party_Optimizer::apply( $fingerprint );
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation();
+		BaoCache_Activity::log( 'third_party_apply', 'success', __( 'Đã apply third-party delay recommendation.', 'baocache' ), array( 'fingerprint' => substr( $fingerprint, 0, 12 ) ) );
+		wp_send_json_success( array( 'message' => __( 'Đã apply delay cho third-party script và xếp hàng purge frontend.', 'baocache' ) ) );
+	}
+
+	public function rollback_third_party_ajax(): void {
+		check_ajax_referer( self::THIRD_PARTY_ROLLBACK_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền rollback third-party delay.', 'baocache' ) ), 403 );
+		$result = BaoCache_Third_Party_Optimizer::rollback();
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation();
+		BaoCache_Activity::log( 'third_party_rollback', 'success', __( 'Đã rollback third-party delay recommendation.', 'baocache' ) );
+		wp_send_json_success( array( 'message' => __( 'Đã rollback third-party delay về cấu hình trước đó.', 'baocache' ) ) );
 	}
 
 	public function rollback_critical_image_ajax(): void {
@@ -1749,6 +1788,13 @@ final class BaoCache_Admin {
 						<div class="baocache-delay-preview"><div><strong><?php echo esc_html( $delay_preview_active ? __( 'Delay preview đang bật', 'baocache' ) : __( 'Delay preview riêng cho quản trị viên', 'baocache' ) ); ?></strong><small><?php echo esc_html( $delay_preview_active ? __( 'Chỉ tài khoản hiện tại bị áp dụng Delay; preview tự hết hạn sau 30 phút và không tác động khách truy cập.', 'baocache' ) : __( 'Mở một tab frontend đăng nhập để thử handle đã chọn, theo dõi lỗi cục bộ và rollback trước khi khách truy cập bị ảnh hưởng.', 'baocache' ) ); ?></small></div><a class="button button-secondary" href="<?php echo esc_url( $delay_preview_url ); ?>"<?php echo $delay_preview_active ? '' : ' target="_blank" rel="noopener"'; ?>><?php echo esc_html( $delay_preview_active ? __( 'Kết thúc preview', 'baocache' ) : __( 'Mở preview 30 phút', 'baocache' ) ); ?></a></div>
 					</article>
 
+					<?php $third_party_snapshot = BaoCache_Third_Party_Optimizer::snapshot(); $third_party_application = BaoCache_Third_Party_Optimizer::application(); $third_party_candidates = is_array( $third_party_snapshot['candidates'] ?? null ) ? $third_party_snapshot['candidates'] : array(); ?>
+					<article class="baocache-panel baocache-panel--wide baocache-assets-workspace" data-baocache-pane="assets">
+						<div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Third-party Optimizer', 'baocache' ); ?></h2><p><?php esc_html_e( 'Phân loại script ngoài domain từ Asset Inventory. Chỉ đề xuất handle độc lập; cart, checkout, payment, navigation và dependency sẽ bị loại.', 'baocache' ); ?></p></div><span class="baocache-badge is-warn"><?php esc_html_e( 'beta79 · Review required', 'baocache' ); ?></span></div>
+						<?php if ( ! empty( $third_party_candidates ) ) : ?><ul class="baocache-third-party-list"><?php foreach ( $third_party_candidates as $candidate ) : ?><li><code><?php echo esc_html( (string) ( $candidate['handle'] ?? '' ) ); ?></code><span><?php echo esc_html( (string) ( $candidate['host'] ?? '' ) ); ?></span><small><?php echo esc_html( (string) ( $candidate['risk'] ?? 'review' ) ); ?></small></li><?php endforeach; ?></ul><?php endif; ?>
+						<div class="baocache-purge-actions"><button type="button" class="button button-secondary" data-baocache-scan-third-party><?php esc_html_e( 'Phân tích third-party', 'baocache' ); ?></button><?php if ( ! empty( $third_party_candidates ) ) : ?><button type="button" class="button button-primary" data-baocache-apply-third-party data-fingerprint="<?php echo esc_attr( (string) ( $third_party_snapshot['fingerprint'] ?? '' ) ); ?>"><?php esc_html_e( 'Apply delay candidates', 'baocache' ); ?></button><?php endif; ?><?php if ( ! empty( $third_party_application['applied_at'] ) && empty( $third_party_application['rolled_back_at'] ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-third-party><?php esc_html_e( 'Rollback', 'baocache' ); ?></button><?php endif; ?><output data-baocache-third-party-result><?php echo esc_html( ! empty( $third_party_candidates ) ? sprintf( __( '%d candidate · fingerprint %s', 'baocache' ), count( $third_party_candidates ), substr( (string) ( $third_party_snapshot['fingerprint'] ?? '' ), 0, 12 ) ) : __( 'Chưa có recommendation. Hãy quét Asset Inventory trước.', 'baocache' ) ); ?></output></div>
+					</article>
+
 					<article class="baocache-panel baocache-panel--wide baocache-resource-workspace" data-baocache-pane="resources">
 						<div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Resource hints', 'baocache' ); ?></h2><p><?php esc_html_e( 'Chỉ preload tài nguyên thực sự xuất hiện above-the-fold để tránh làm chậm LCP.', 'baocache' ); ?></p></div></div>
 						<div class="baocache-two-columns">
@@ -1939,6 +1985,12 @@ final class BaoCache_Admin {
 			'critical_image_scan' => __( 'Critical Image Scan', 'baocache' ),
 			'critical_image_apply' => __( 'Critical Image Apply', 'baocache' ),
 			'critical_image_rollback' => __( 'Critical Image Rollback', 'baocache' ),
+			'resource_hints_scan' => __( 'Resource Hints Scan', 'baocache' ),
+			'resource_hints_apply' => __( 'Resource Hints Apply', 'baocache' ),
+			'resource_hints_rollback' => __( 'Resource Hints Rollback', 'baocache' ),
+			'third_party_scan' => __( 'Third-party Scan', 'baocache' ),
+			'third_party_apply' => __( 'Third-party Apply', 'baocache' ),
+			'third_party_rollback' => __( 'Third-party Rollback', 'baocache' ),
 			'database_repair' => __( 'BaoCache Database Repair', 'baocache' ),
 			'database_runtime_cleanup' => __( 'BaoCache Runtime Cleanup', 'baocache' ),
 			'compatibility_qa' => __( 'Staging Compatibility QA', 'baocache' ),

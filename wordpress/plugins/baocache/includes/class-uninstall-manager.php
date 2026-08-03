@@ -45,7 +45,7 @@ final class BaoCache_Uninstall_Manager {
 			'baocache_csp_enforce_acknowledgement', 'baocache_csp_post_enforcement_probe',
 			'baocache_csp_post_enforcement_probe_history', 'baocache_csp_post_probe_ack',
 			'baocache_csp_post_probe_ack_history', 'baocache_csp_post_probe_remediation',
-			'baocache_fastcgi_purge_evidence', 'baocache_resource_hint_snapshot', 'baocache_resource_hint_application',
+			'baocache_fastcgi_purge_evidence', 'baocache_resource_hint_snapshot', 'baocache_resource_hint_application', 'baocache_third_party_snapshot', 'baocache_third_party_application',
 			'baocache_critical_image_snapshot', 'baocache_critical_image_application',
 		) );
 	}
