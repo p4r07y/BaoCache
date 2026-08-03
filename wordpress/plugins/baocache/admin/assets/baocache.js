@@ -787,8 +787,13 @@
 			resourceHintScanButton.disabled = true;
 			try {
 				const data = await request({ action: 'baocache_scan_resource_hints', nonce: BaoCacheAdmin.resourceHintScanNonce }, 'Không thể tạo recommendation Resource Hints.');
-				if (resourceHintResult) resourceHintResult.textContent = `${data.count} candidate · fingerprint ${String(data.fingerprint).slice(0, 12)}. Tải lại trang để apply.`;
-				showToast('Đã tạo recommendation Resource & Font Hints.');
+				if (data.count > 0) {
+					if (resourceHintResult) resourceHintResult.textContent = `${data.count} candidate · fingerprint ${String(data.fingerprint).slice(0, 12)}. Tải lại trang để apply.`;
+					showToast('Đã tạo recommendation Resource & Font Hints.');
+				} else {
+					if (resourceHintResult) resourceHintResult.textContent = 'Đã quét Asset Inventory nhưng chưa có origin/font đủ evidence. Không có gì để apply.';
+					showToast('Chưa có Resource Hint đủ evidence để đề xuất.');
+				}
 			} catch (error) {
 				showToast(error.message || 'Không thể tạo recommendation Resource Hints.', { error: true });
 			} finally { resourceHintScanButton.disabled = false; }

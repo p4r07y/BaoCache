@@ -98,7 +98,7 @@ the target deployment.
 | beta81 — Theme & Builder Adapters | Delivered foundation — acceptance open | Optional Blocksy, Elementor and Bricks metadata/constraints | Observed-handle exclusion, apply/rollback and no-adapter core path implemented; staging matrix remains open |
 | beta82 — Cloudflare Integration | Delivered foundation — acceptance open | Cache Rules diagnostics and explicit, opt-in exact URL purge | Coolify-only secret, Cache Purge flag, same-site URL boundary and Activity audit implemented; token-scope staging proof remains open |
 | beta83 — Optimization Advisor | Delivered foundation — acceptance open | Deterministic, risk-ranked cross-module recommendation routing | Evidence, mechanism and scope shown; original module keeps preview/apply/rollback gate; staging acceptance remains open |
-| Stable RC | Blocked by acceptance | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
+| Stable RC | In progress — acceptance blocked | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
 
 No milestone is considered delivered when only UI or source code exists; it
 must also pass the stated evidence gate and be represented in the committed
@@ -114,7 +114,7 @@ ZIP artifact.
 | P3 — beta81 acceptance | Verify observed-handle protection on Blocksy, Elementor, Bricks and a site with no adapter. | Fresh-site proof that the generic engine works with no adapter active, plus one rollback. |
 | P4 — beta82 acceptance | Validate Zone Read, Zone Rulesets Read and Cache Purge scopes against a staging zone; exercise one exact URL purge. | Least-privilege token proof and Activity record; no all/host/prefix/tag purge. |
 | P5 — beta83 acceptance | Verify advisor recommendations against their owning module and ensure no card offers a bypass action. | Evidence/source mapping, module redirect, apply/rollback preservation. |
-| P6 — Stable RC | Close clean install, Site Overrides import/export and multisite support statement. | Staging acceptance report with PASS/FAIL per gate. |
+| P6 — Stable RC | In progress: close clean install, Site Overrides import/export and multisite support statement. | Staging acceptance report with PASS/FAIL per gate. |
 
 P1 is the current blocker for a stable candidate. P2 may be implemented in
 parallel only when it does not replace or weaken that acceptance work.
