@@ -43,6 +43,7 @@ require_once BAOCACHE_PATH . 'includes/class-third-party-optimizer.php';
 require_once BAOCACHE_PATH . 'includes/class-commerce-optimizer.php';
 require_once BAOCACHE_PATH . 'includes/class-theme-builder-adapters.php';
 require_once BAOCACHE_PATH . 'includes/class-optimization-advisor.php';
+require_once BAOCACHE_PATH . 'includes/class-site-overrides.php';
 require_once BAOCACHE_PATH . 'includes/class-admin.php';
 require_once BAOCACHE_PATH . 'includes/class-render-blocking.php';
 require_once BAOCACHE_PATH . 'includes/class-plugin.php';

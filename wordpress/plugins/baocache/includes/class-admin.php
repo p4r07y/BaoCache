@@ -5,6 +5,9 @@ final class BaoCache_Admin {
 	private const string PAGE_SLUG = 'baocache';
 	private const string FLUSH_ACTION = 'baocache_flush_object_cache';
 	private const string EXPORT_ACTION = 'baocache_export_report';
+	private const string SITE_OVERRIDE_EXPORT_ACTION = 'baocache_export_site_overrides';
+	private const string SITE_OVERRIDE_IMPORT_ACTION = 'baocache_import_site_overrides';
+	private const string SITE_OVERRIDE_ROLLBACK_ACTION = 'baocache_rollback_site_overrides';
 	private const string INSPECT_ACTION = 'baocache_inspect_headers';
 	private const string RESTORE_ACTION = 'baocache_restore_revision';
 	private const string PREVIEW_ACTION = 'baocache_preview_asset_rule';
@@ -70,6 +73,9 @@ final class BaoCache_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 		add_action( 'admin_post_' . self::FLUSH_ACTION, array( $this, 'flush_object_cache' ) );
 		add_action( 'admin_post_' . self::EXPORT_ACTION, array( $this, 'export_report' ) );
+		add_action( 'admin_post_' . self::SITE_OVERRIDE_EXPORT_ACTION, array( $this, 'export_site_overrides' ) );
+		add_action( 'wp_ajax_' . self::SITE_OVERRIDE_IMPORT_ACTION, array( $this, 'import_site_overrides_ajax' ) );
+		add_action( 'wp_ajax_' . self::SITE_OVERRIDE_ROLLBACK_ACTION, array( $this, 'rollback_site_overrides_ajax' ) );
 		add_action( 'wp_ajax_' . self::INSPECT_ACTION, array( $this, 'inspect_headers' ) );
 		add_action( 'admin_post_' . self::RESTORE_ACTION, array( $this, 'restore_revision' ) );
 		add_action( 'wp_ajax_' . self::PURGE_URL_AJAX_ACTION, array( $this, 'purge_fastcgi_url_ajax' ) );
@@ -205,6 +211,8 @@ final class BaoCache_Admin {
 		wp_localize_script( 'baocache-admin', 'BaoCacheAdmin', array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'nonce' => wp_create_nonce( self::INSPECT_ACTION ),
+			'siteOverrideImportNonce' => wp_create_nonce( self::SITE_OVERRIDE_IMPORT_ACTION ),
+			'siteOverrideRollbackNonce' => wp_create_nonce( self::SITE_OVERRIDE_ROLLBACK_ACTION ),
 			'previewNonce' => wp_create_nonce( self::PREVIEW_ACTION ),
 			'saveNonce' => wp_create_nonce( self::SAVE_ACTION ),
 			'warmupNonce' => wp_create_nonce( self::WARM_ACTION ),
@@ -1023,6 +1031,25 @@ final class BaoCache_Admin {
 		wp_send_json_success( array( 'message' => __( 'Đã gửi purge URL chính xác tới Cloudflare.', 'baocache' ) ) );
 	}
 
+	public function export_site_overrides(): void {
+		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'Bạn không có quyền export Site Overrides.', 'baocache' ), 403 );
+		check_admin_referer( self::SITE_OVERRIDE_EXPORT_ACTION ); nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8' ); header( 'Content-Disposition: attachment; filename=baocache-site-overrides.json' );
+		echo wp_json_encode( BaoCache_Site_Overrides::profile(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ); exit;
+	}
+
+	public function import_site_overrides_ajax(): void {
+		check_ajax_referer( self::SITE_OVERRIDE_IMPORT_ACTION, 'nonce' ); if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền import Site Overrides.', 'baocache' ) ), 403 );
+		$result = BaoCache_Site_Overrides::import( (string) wp_unslash( $_POST['profile'] ?? '' ) ); if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation(); BaoCache_Activity::log( 'site_override_import', 'success', __( 'Đã import Site Overrides.', 'baocache' ) ); wp_send_json_success( array( 'message' => __( 'Đã import Site Overrides và xếp hàng purge frontend.', 'baocache' ) ) );
+	}
+
+	public function rollback_site_overrides_ajax(): void {
+		check_ajax_referer( self::SITE_OVERRIDE_ROLLBACK_ACTION, 'nonce' ); if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền rollback Site Overrides.', 'baocache' ) ), 403 );
+		$result = BaoCache_Site_Overrides::rollback(); if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation(); BaoCache_Activity::log( 'site_override_rollback', 'success', __( 'Đã rollback Site Overrides.', 'baocache' ) ); wp_send_json_success( array( 'message' => __( 'Đã rollback Site Overrides.', 'baocache' ) ) );
+	}
+
 	public function probe_hardening_ajax(): void {
 		check_ajax_referer( self::HARDENING_PROBE_ACTION, 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -1763,6 +1790,7 @@ final class BaoCache_Admin {
 			<form method="post" action="options.php" class="baocache-form">
 				<?php settings_fields( 'baocache_settings' ); ?>
 				<section class="baocache-grid">
+					<article class="baocache-panel baocache-panel--wide" data-baocache-pane="settings"><div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Site Overrides', 'baocache' ); ?></h2><p><?php esc_html_e( 'Export/import chỉ rule, exclusion và resource hints; không token, analytics, log, metrics hay domain nguồn.', 'baocache' ); ?></p></div></div><textarea data-baocache-site-overrides rows="5" placeholder="Dán BaoCache Site Overrides JSON…"></textarea><div class="baocache-purge-actions"><a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=' . self::SITE_OVERRIDE_EXPORT_ACTION ), self::SITE_OVERRIDE_EXPORT_ACTION ) ); ?>"><?php esc_html_e( 'Xuất Site Overrides', 'baocache' ); ?></a><button type="button" class="button button-primary" data-baocache-import-site-overrides><?php esc_html_e( 'Import & merge', 'baocache' ); ?></button><?php if ( ! empty( BaoCache_Site_Overrides::application()['applied_at'] ) && empty( BaoCache_Site_Overrides::application()['rolled_back_at'] ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-site-overrides><?php esc_html_e( 'Rollback import', 'baocache' ); ?></button><?php endif; ?><output data-baocache-site-overrides-result></output></div></article>
 					<article class="baocache-panel baocache-panel--wide baocache-settings-advanced" data-baocache-pane="settings">
 						<div class="baocache-panel__heading"><div><span class="baocache-eyebrow"><?php esc_html_e( 'Settings → Advanced', 'baocache' ); ?></span><h2><?php esc_html_e( 'Data Retention', 'baocache' ); ?></h2><p><?php esc_html_e( 'Kiểm soát dữ liệu được giữ lại khi gỡ BaoCache. Runtime luôn được dọn.', 'baocache' ); ?></p></div><span class="baocache-badge is-neutral"><?php esc_html_e( 'Default: Keep', 'baocache' ); ?></span></div>
 						<div class="baocache-retention-options">

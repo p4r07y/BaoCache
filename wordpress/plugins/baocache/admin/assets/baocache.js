@@ -110,7 +110,14 @@
 	const databaseRepairButton = document.querySelector('[data-baocache-database-repair]');
 	const databaseCleanButton = document.querySelector('[data-baocache-database-clean]');
 	const databaseResult = document.querySelector('[data-baocache-database-result]');
+	const siteOverridesInput = document.querySelector('[data-baocache-site-overrides]');
+	const siteOverridesImport = document.querySelector('[data-baocache-import-site-overrides]');
+	const siteOverridesRollback = document.querySelector('[data-baocache-rollback-site-overrides]');
+	const siteOverridesResult = document.querySelector('[data-baocache-site-overrides-result]');
 	let toastTimer;
+
+	if (siteOverridesImport && siteOverridesInput && window.BaoCacheAdmin) siteOverridesImport.addEventListener('click', async () => { try { const data = await request({ action: 'baocache_import_site_overrides', nonce: BaoCacheAdmin.siteOverrideImportNonce, profile: siteOverridesInput.value }, 'Không thể import Site Overrides.'); if (siteOverridesResult) siteOverridesResult.textContent = data.message; showToast(data.message); } catch (error) { showToast(error.message || 'Không thể import Site Overrides.', { error: true }); } });
+	if (siteOverridesRollback && window.BaoCacheAdmin) siteOverridesRollback.addEventListener('click', async () => { try { const data = await request({ action: 'baocache_rollback_site_overrides', nonce: BaoCacheAdmin.siteOverrideRollbackNonce }, 'Không thể rollback Site Overrides.'); if (siteOverridesResult) siteOverridesResult.textContent = data.message; showToast(data.message); } catch (error) { showToast(error.message || 'Không thể rollback Site Overrides.', { error: true }); } });
 
 	const setButtonLabel = (button, label) => {
 		if (!button) return;
