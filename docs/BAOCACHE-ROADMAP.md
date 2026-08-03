@@ -80,6 +80,11 @@ the target deployment.
   roadmap status and committed `wordpress/plugins/baocache.zip` must agree.
 - **Release gate:** version consistency, absence of nested Git repositories and
   ZIP/source parity must be checked before publishing the artifact.
+- **Every roadmap milestone:** run `scripts/build-baocache-zip.sh`, then
+  `scripts/validate-release.sh`, and commit the resulting ZIP with its source.
+- **Commit names:** use `Start betaNN — scope` when opening work, `Release
+  betaNN — scope` when its evidence gate and ZIP pass, and `Harden betaNN —
+  scope` for a follow-up that still rebuilds and validates the ZIP.
 - **Current state:** beta79 is a functional beta release. Browser compatibility
   acceptance, browser functional tests and rollback evidence remain open.
 
