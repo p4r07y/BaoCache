@@ -4,7 +4,7 @@ Tags: nginx, redis, performance, coolify, cache
 Requires at least: 6.7
 Tested up to: 6.8
 Requires PHP: 8.3
-Stable tag: 0.3.0-beta.78
+Stable tag: 0.3.0-beta.79
 License: GPL-2.0-or-later
 
 BaoCache is a standalone WordPress performance engine for Nginx FastCGI cache,
@@ -95,6 +95,11 @@ queued asset depends on it. Test selected analytics, chat and widget handles whi
 logged out on staging before enabling them for visitors.
 
 == Changelog ==
+
+= 0.3.0-beta.79 =
+
+* Added Third-party Optimizer recommendations from verified Asset Inventory evidence.
+* Added conservative risk classification, dependency/sensitive-handle exclusion, explicit delay apply, stale fingerprint protection and rollback.
 
 = 0.3.0-beta.78 =
 

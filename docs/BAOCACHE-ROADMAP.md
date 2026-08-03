@@ -45,7 +45,7 @@ No combined “95/100 performance score” will be shown. No HIT ratio, LCP, TTF
 Redis latency or warm queue count will be shown until BaoCache collects it from a
 verified source.
 
-## Roadmap status — beta78
+## Roadmap status — beta79
 
 This release is a functional beta hardening release. The release gate is
 evidence-based: syntax and Compose validation are automated; staging acceptance
@@ -72,23 +72,24 @@ the target deployment.
 | Ưu tiên kế tiếp | Tự động phát hiện, recommendation có thể áp dụng, và UX thương mại theo evidence | **8 nhóm giá trị trực tiếp** |
 | Stable candidate | Cần staging acceptance thật, rollback thực tế, multi-page scope và kiểm thử install sạch | **~85–90% sẵn sàng kiến trúc** |
 
-**Tổng mốc beta đã triển khai: 37, gồm beta78 resource-hint automation.**
+**Tổng mốc beta đã triển khai: 38, gồm beta79 third-party optimizer foundation.**
 
-### Release control — beta78
+### Release control — beta79
 
 - **Source of truth:** plugin header, `BAOCACHE_VERSION`, readme Stable tag,
   roadmap status and committed `wordpress/plugins/baocache.zip` must agree.
 - **Release gate:** version consistency, absence of nested Git repositories and
   ZIP/source parity must be checked before publishing the artifact.
-- **Current state:** beta78 is a functional beta hardening release. Staging
+- **Current state:** beta79 is a functional beta release. Browser compatibility
   acceptance, browser functional tests and rollback evidence remain open.
 
-### Deployment roadmap — next milestone beta79
+### Deployment roadmap — next milestone beta80
 
 | Milestone | Status | Implementation boundary | Required evidence |
 | --- | --- | --- | --- |
 | beta78 — Automatic Resource & Font Hints | Delivered in beta | Derive bounded cross-origin origin/font recommendations from observed Asset Inventory evidence; cap hints; never blind-preload | Evidence fingerprint, recommendation diff, apply/rollback and cache invalidation implemented; staging probe remains open |
-| beta79 — Third-party Optimizer | In progress | Handle/dependency-aware classification and conservative delay recommendations for independent third-party scripts | Evidence fingerprint, review-required risk labels, apply/rollback and browser compatibility matrix |
+| beta79 — Third-party Optimizer | Delivered in beta | Handle/dependency-aware classification and conservative delay recommendations for independent third-party scripts | Evidence fingerprint, review-required risk labels and apply/rollback implemented; browser compatibility matrix remains open |
+| beta80 — Commerce Optimizer | Planned | Generic cart/checkout detection plus optional WooCommerce metadata | Protected-route matrix, fragment evidence and rollback |
 | Stable RC | Blocked by acceptance | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
 
 No milestone is considered delivered when only UI or source code exists; it
@@ -128,7 +129,7 @@ infrastructure rather than a feature stream.
 | **beta77 — Automatic Critical Images (delivered)** | Ranks same-site front-page image candidates from bounded DOM evidence and can safely apply `fetchpriority`, eager loading and preload. | Confidence is not an LCP claim; raw HTML is not stored; apply must pass a public post-change probe or is rolled back immediately. |
 | **beta77.1 — Data Retention & BaoCache Database Health (delivered)** | Keeps configuration by default across reinstall, provides explicit full removal, self-checks owned schema/config/cron, and reports autoload size read-only. | Runtime is always disposable; exact cleanup registry only; no wildcard option deletion, no `DROP TABLE`, and no WordPress/third-party repair. |
 | **beta78 — Automatic Resource & Font Hints (delivered)** | Recommend bounded preconnect and font preload hints from observed Asset Inventory evidence. | Validate the same resource fingerprint; cap hints; apply/rollback is explicit; no blind preload. |
-| **beta79 — Third-party Optimizer** | Classify third-party scripts by origin, cost and page context; offer delay/consent/context rules. | Handle/dependency-aware only; preview, staging QA and rollback required. |
+| **beta79 — Third-party Optimizer (delivered foundation)** | Classify third-party scripts by origin, risk and dependency context; offer conservative delay recommendations. | Handle/dependency-aware only; preview, staging QA and rollback required. |
 | **beta80 — Commerce Optimizer** | Generic cart/checkout detection plus optional WooCommerce metadata for fragment, asset and cache-bypass recommendations. | Checkout/authenticated routes are protected by default; no adapter-only core logic. |
 | **beta81 — Theme & Builder Adapters** | Optional Blocksy, Elementor and Bricks metadata/constraints for clearer recommendations. | Core uses observed handles/DOM; adapters add labels and exclusions only. |
 | **beta82 — Cloudflare Integration** | Read-only audit evolves into explicit, opt-in URL purge and cache-rule diagnostics. | Coolify secrets only; least privilege; no DNS/WAF/SSL/APO mutation without separate confirmation. |
@@ -528,7 +529,7 @@ statement.
   public probe must verify the image, preload and priority output; otherwise
   BaoCache immediately restores the prior configuration. Manual rollback is
   blocked when settings changed after apply.
-- **Next:** beta79 — Third-party Optimizer, using observed handles and
+- **Next:** beta80 — Commerce Optimizer, using protected-route and fragment
   asset fingerprints to recommend bounded, deduplicated hints without blind
   preload.
 
