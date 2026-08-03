@@ -11,7 +11,7 @@ missing result is not a PASS.
 | Critical contexts | Logged-in, login, cart, checkout, account, menu, form, map, analytics and chat are PASS in Compatibility QA. | Open on staging |
 | Cloudflare | Audit token scope works; exact URL purge is checked only if its separate token and Coolify flag are enabled. | Open on staging |
 | Site Overrides | Export/import profile is validated without carrying credentials, runtime metrics, logs, identities or another site's domain. | Open |
-| Multisite | Network support statement is published after a separate WordPress multisite test; until then BaoCache is single-site only. | Open |
+| Multisite | Network support statement is published after a separate WordPress multisite test; until then BaoCache is single-site only. | Open — single-site only |
 
 ## Release decision
 
