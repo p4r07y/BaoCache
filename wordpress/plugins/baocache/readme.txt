@@ -4,7 +4,7 @@ Tags: nginx, redis, performance, coolify, cache
 Requires at least: 6.7
 Tested up to: 6.8
 Requires PHP: 8.3
-Stable tag: 0.3.0-beta.80
+Stable tag: 0.3.0-beta.81
 License: GPL-2.0-or-later
 
 BaoCache is a standalone WordPress performance engine for Nginx FastCGI cache,
@@ -54,6 +54,7 @@ Features:
 * Staging Compatibility QA records manual PASS/FAIL results for menus, forms, maps, analytics, chat, checkout, login and rollback without pretending to be an automated browser test.
 * Per-rule Compatibility Gates keep production defer, async CSS and delay disabled until the handle has QA PASS and a verified rollback; staging/development remain available for testing.
 * Commerce Optimizer builds protected cart/checkout/account route evidence from WooCommerce metadata, observes fragment/payment asset handles, and can add only verified routes to existing render-blocking exclusions with a stale-safe rollback.
+* Optional Blocksy, Elementor and Bricks adapters classify only active/inventory-observed integrations and can protect only their observed handles with a stale-safe rollback.
 
 == Compatibility ==
 
@@ -96,6 +97,11 @@ queued asset depends on it. Test selected analytics, chat and widget handles whi
 logged out on staging before enabling them for visitors.
 
 == Changelog ==
+
+= 0.3.0-beta.81 =
+
+* Added optional Blocksy, Elementor and Bricks metadata from active integrations and observed Asset Inventory handles.
+* Added explicit adapter exclusion apply/rollback without generic shared-library exclusions or a core dependency on any adapter.
 
 = 0.3.0-beta.80 =
 

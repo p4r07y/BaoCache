@@ -45,7 +45,7 @@ No combined “95/100 performance score” will be shown. No HIT ratio, LCP, TTF
 Redis latency or warm queue count will be shown until BaoCache collects it from a
 verified source.
 
-## Roadmap status — beta80
+## Roadmap status — beta81
 
 This release is a functional beta hardening release. The release gate is
 evidence-based: syntax and Compose validation are automated; staging acceptance
@@ -72,9 +72,9 @@ the target deployment.
 | Ưu tiên kế tiếp | Tự động phát hiện, recommendation có thể áp dụng, và UX thương mại theo evidence | **8 nhóm giá trị trực tiếp** |
 | Stable candidate | Cần staging acceptance thật, rollback thực tế, multi-page scope và kiểm thử install sạch | **~85–90% sẵn sàng kiến trúc** |
 
-**Tổng mốc beta đã triển khai: 39, gồm beta80 commerce protection foundation.**
+**Tổng mốc beta đã triển khai: 40, gồm beta81 theme/builder adapter foundation.**
 
-### Release control — beta80
+### Release control — beta81
 
 - **Source of truth:** plugin header, `BAOCACHE_VERSION`, readme Stable tag,
   roadmap status and committed `wordpress/plugins/baocache.zip` must agree.
@@ -85,8 +85,8 @@ the target deployment.
 - **Commit names:** use `Start betaNN — scope` when opening work, `Release
   betaNN — scope` when its evidence gate and ZIP pass, and `Harden betaNN —
   scope` for a follow-up that still rebuilds and validates the ZIP.
-- **Current state:** beta80 is a functional beta release. Browser compatibility
-  acceptance, protected-route staging tests and rollback evidence remain open.
+- **Current state:** beta81 is a functional beta release. Browser compatibility
+  acceptance, protected-route/adapters staging tests and rollback evidence remain open.
 
 ### Deployment roadmap — next milestone beta80
 
@@ -95,6 +95,7 @@ the target deployment.
 | beta78 — Automatic Resource & Font Hints | Delivered in beta | Derive bounded cross-origin origin/font recommendations from observed Asset Inventory evidence; cap hints; never blind-preload | Evidence fingerprint, recommendation diff, apply/rollback and cache invalidation implemented; staging probe remains open |
 | beta79 — Third-party Optimizer | Delivered in beta | Handle/dependency-aware classification and conservative delay recommendations for independent third-party scripts | Evidence fingerprint, review-required risk labels and apply/rollback implemented; browser compatibility matrix remains open |
 | beta80 — Commerce Optimizer | Delivered foundation — acceptance open | Generic cart/checkout detection plus optional WooCommerce metadata | Metadata-backed protected routes, fragment evidence, apply/rollback implemented; staging matrix remains open |
+| beta81 — Theme & Builder Adapters | Delivered foundation — acceptance open | Optional Blocksy, Elementor and Bricks metadata/constraints | Observed-handle exclusion, apply/rollback and no-adapter core path implemented; staging matrix remains open |
 | Stable RC | Blocked by acceptance | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
 
 No milestone is considered delivered when only UI or source code exists; it
@@ -108,8 +109,8 @@ ZIP artifact.
 | P0 — release integrity | Keep the version, committed ZIP and source identical; run the release scripts on every roadmap commit. | `scripts/validate-release.sh` passes. |
 | P1 — beta79/80 acceptance | Exercise third-party and commerce recommendations on staging: review, apply, frontend probe and rollback. | Recorded PASS/FAIL compatibility matrix and one verified rollback for both scopes. |
 | P2 — beta80 acceptance | Exercise protected-route apply/rollback on staging cart, checkout and account flows. | Protected cart/checkout/auth route matrix and one verified rollback. |
-| P3 — beta81 adapters | Add optional Blocksy, Elementor and Bricks context without making them core dependencies. | Fresh-site proof that the generic engine works with no adapter active. |
-| P4 — integrations and advisor | Advance Cloudflare opt-in controls and risk-ranked Optimization Advisor only after the evidence layer is accepted. | Least-privilege integration proof, preview and explicit rollback. |
+| P3 — beta81 acceptance | Verify observed-handle protection on Blocksy, Elementor, Bricks and a site with no adapter. | Fresh-site proof that the generic engine works with no adapter active, plus one rollback. |
+| P4 — beta82 Cloudflare integration | Advance explicit opt-in URL purge and cache-rule diagnostics only after the evidence layer is accepted. | Least-privilege integration proof, preview and explicit rollback. |
 
 P1 is the current blocker for a stable candidate. P2 may be implemented in
 parallel only when it does not replace or weaken that acceptance work.
@@ -149,7 +150,7 @@ infrastructure rather than a feature stream.
 | **beta78 — Automatic Resource & Font Hints (delivered)** | Recommend bounded preconnect and font preload hints from observed Asset Inventory evidence. | Validate the same resource fingerprint; cap hints; apply/rollback is explicit; no blind preload. |
 | **beta79 — Third-party Optimizer (delivered foundation)** | Classify third-party scripts by origin, risk and dependency context; offer conservative delay recommendations. | Handle/dependency-aware only; preview, staging QA and rollback required. |
 | **beta80 — Commerce Optimizer (delivered foundation)** | Generic cart/checkout protection baseline, optional WooCommerce route metadata, observed fragment/payment handles, explicit protected-route apply and stale-safe rollback. | Checkout/authenticated routes remain protected by default; no cache strategy change or adapter-only core logic. |
-| **beta81 — Theme & Builder Adapters** | Optional Blocksy, Elementor and Bricks metadata/constraints for clearer recommendations. | Core uses observed handles/DOM; adapters add labels and exclusions only. |
+| **beta81 — Theme & Builder Adapters (delivered foundation)** | Optional Blocksy, Elementor and Bricks metadata/constraints with observed-handle exclusion and stale-safe rollback. | Core uses observed handles/DOM; adapters add labels and exclusions only. |
 | **beta82 — Cloudflare Integration** | Read-only audit evolves into explicit, opt-in URL purge and cache-rule diagnostics. | Coolify secrets only; least privilege; no DNS/WAF/SSL/APO mutation without separate confirmation. |
 | **beta83 — Optimization Advisor** | Risk-ranked recommendations with expected mechanism, evidence, scope, preview and one-click safe apply. | Deterministic rules first; any AI explanation is advisory and cannot bypass gates. |
 | **Stable release candidate** | Clean-install onboarding, Site Overrides import/export, multisite support statement and commercial UX polish. | Test matrix across fresh WordPress, common themes/builders, cache layers and rollback paths. |
