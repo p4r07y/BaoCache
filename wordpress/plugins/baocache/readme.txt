@@ -4,7 +4,7 @@ Tags: nginx, redis, performance, coolify, cache
 Requires at least: 6.7
 Tested up to: 6.8
 Requires PHP: 8.3
-Stable tag: 0.3.0-beta.77.1
+Stable tag: 0.3.0-beta.78
 License: GPL-2.0-or-later
 
 BaoCache is a standalone WordPress performance engine for Nginx FastCGI cache,
@@ -26,6 +26,8 @@ Features:
 * Smart asset scopes for URL, post type, and the presence or absence of a shortcode or block.
 * Measured Asset Insights: largest local asset, third-party sources, duplicate registered sources and head-script placement.
 * Preconnect, DNS-prefetch and preload controls.
+* Evidence-driven Automatic Resource & Font Hints with bounded preview, apply
+  and stale-guarded rollback; origin-only timing never becomes a blind preload.
 * LCP image assistance for an administrator-verified WordPress attachment URL.
 * Optional public TTL sent through `X-Accel-Expires`; it never replaces a TTL already sent by another plugin.
 * Redis object-cache flush plus an authenticated exact-URL FastCGI purge when
@@ -95,6 +97,15 @@ queued asset depends on it. Test selected analytics, chat and widget handles whi
 logged out on staging before enabling them for visitors.
 
 == Changelog ==
+
+= 0.3.0-beta.78 =
+
+* Added evidence-driven Automatic Resource & Font Hints.
+* Added bounded origin fingerprinting, deduplication and confidence evidence
+  from the latest opt-in Resource Timing sample.
+* Added explicit preview/apply for up to three safe connection hints and
+  stale-guarded rollback. BaoCache never invents preload URLs from origin-only
+  evidence.
 
 = 0.3.0-beta.77.1 =
 

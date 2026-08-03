@@ -92,6 +92,9 @@
 	const databaseRepairButton = document.querySelector('[data-baocache-database-repair]');
 	const databaseCleanButton = document.querySelector('[data-baocache-database-clean]');
 	const databaseResult = document.querySelector('[data-baocache-database-result]');
+	const resourceHintApplyButton = document.querySelector('[data-baocache-apply-resource-hints]');
+	const resourceHintRollbackButton = document.querySelector('[data-baocache-rollback-resource-hints]');
+	const resourceHintResult = document.querySelector('[data-baocache-resource-hints-result]');
 	let toastTimer;
 
 	const setButtonLabel = (button, label) => {
@@ -245,6 +248,39 @@
 	databaseCheckButton?.addEventListener('click', () => runDatabaseAction(databaseCheckButton, 'baocache_database_check', BaoCacheAdmin.databaseCheckNonce, BaoCacheAdmin.databaseCheckError));
 	databaseRepairButton?.addEventListener('click', () => runDatabaseAction(databaseRepairButton, 'baocache_database_repair', BaoCacheAdmin.databaseRepairNonce, BaoCacheAdmin.databaseRepairError, 'BaoCache chỉ tạo option/schema marker bị thiếu và xác minh cron do BaoCache sở hữu. Tiếp tục?'));
 	databaseCleanButton?.addEventListener('click', () => runDatabaseAction(databaseCleanButton, 'baocache_database_clean_runtime', BaoCacheAdmin.databaseCleanNonce, BaoCacheAdmin.databaseCleanError, 'Dọn Warm Queue, lock, transient, inventory tạm và cron runtime của BaoCache? Cấu hình sẽ được giữ.'));
+
+	resourceHintApplyButton?.addEventListener('click', async () => {
+		const ids = [...document.querySelectorAll('[data-baocache-resource-hint-choice]:checked')].map((input) => input.value);
+		if (!ids.length) {
+			showToast('Hãy chọn ít nhất một origin candidate.', { error: true });
+			return;
+		}
+		if (!window.confirm('Áp dụng tối đa 3 origin hint đã chọn? BaoCache không thêm preload URL.')) return;
+		resourceHintApplyButton.disabled = true;
+		try {
+			const data = await request({ action: 'baocache_apply_resource_hints', nonce: BaoCacheAdmin.resourceHintApplyNonce, ids }, BaoCacheAdmin.resourceHintApplyError);
+			if (resourceHintResult) resourceHintResult.textContent = data.message || 'Đã áp dụng.';
+			showToast(data.message || 'Đã áp dụng resource hints.');
+			window.setTimeout(() => window.location.reload(), 700);
+		} catch (error) {
+			showToast(error.message || BaoCacheAdmin.resourceHintApplyError, { error: true, duration: 5500 });
+		} finally {
+			resourceHintApplyButton.disabled = false;
+		}
+	});
+
+	resourceHintRollbackButton?.addEventListener('click', async () => {
+		if (!window.confirm('Rollback origin hints về cấu hình trước lần apply gần nhất?')) return;
+		resourceHintRollbackButton.disabled = true;
+		try {
+			const data = await request({ action: 'baocache_rollback_resource_hints', nonce: BaoCacheAdmin.resourceHintRollbackNonce }, BaoCacheAdmin.resourceHintRollbackError);
+			showToast(data.message || 'Đã rollback resource hints.');
+			window.setTimeout(() => window.location.reload(), 700);
+		} catch (error) {
+			showToast(error.message || BaoCacheAdmin.resourceHintRollbackError, { error: true, duration: 5500 });
+			resourceHintRollbackButton.disabled = false;
+		}
+	});
 
 	const detectAnalyticsId = () => {
 		const id = (analyticsIdInput?.value || '').trim().toUpperCase();

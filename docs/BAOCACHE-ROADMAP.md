@@ -101,7 +101,7 @@ infrastructure rather than a feature stream.
 | --- | --- | --- |
 | **beta77 — Automatic Critical Images (delivered)** | Ranks same-site front-page image candidates from bounded DOM evidence and can safely apply `fetchpriority`, eager loading and preload. | Confidence is not an LCP claim; raw HTML is not stored; apply must pass a public post-change probe or is rolled back immediately. |
 | **beta77.1 — Data Retention & BaoCache Database Health (delivered)** | Keeps configuration by default across reinstall, provides explicit full removal, self-checks owned schema/config/cron, and reports autoload size read-only. | Runtime is always disposable; exact cleanup registry only; no wildcard option deletion, no `DROP TABLE`, and no WordPress/third-party repair. |
-| **beta78 — Automatic Resource & Font Hints** | Recommend/remove preconnect, DNS-prefetch, preload and font-display policies from observed requests. | Validate same resource fingerprint; cap hints; no blind preload. |
+| **beta78 — Automatic Resource & Font Hints (delivered)** | Evidence-driven origin recommendations with deduplication, bounded apply and rollback. | Exact preload/font-display changes require separate asset/CSS evidence; no blind preload. |
 | **beta79 — Third-party Optimizer** | Classify third-party scripts by origin, cost and page context; offer delay/consent/context rules. | Handle/dependency-aware only; preview, staging QA and rollback required. |
 | **beta80 — Commerce Optimizer** | Generic cart/checkout detection plus optional WooCommerce metadata for fragment, asset and cache-bypass recommendations. | Checkout/authenticated routes are protected by default; no adapter-only core logic. |
 | **beta81 — Theme & Builder Adapters** | Optional Blocksy, Elementor and Bricks metadata/constraints for clearer recommendations. | Core uses observed handles/DOM; adapters add labels and exclusions only. |
@@ -502,9 +502,19 @@ statement.
   public probe must verify the image, preload and priority output; otherwise
   BaoCache immediately restores the prior configuration. Manual rollback is
   blocked when settings changed after apply.
-- **Next:** beta78 — Automatic Resource & Font Hints, using observed origins and
-  asset fingerprints to recommend bounded, deduplicated hints without blind
-  preload.
+- **Delivered (beta78):** Automatic Resource & Font Hints analyzes the latest
+  administrator opt-in Resource Timing sample, fingerprints bounded origin
+  evidence, deduplicates existing hints and caps recommendations. Operators can
+  explicitly apply up to three safe preconnect/DNS-prefetch origins; the action
+  stores before/after state and supports stale-guarded rollback. Exact preload
+  URLs, font-display changes and LCP claims remain out of scope without asset or
+  CSS evidence.
+
+## P2 — Commercial optimization engine
+
+- **Next:** beta79 — Automatic Font Optimization, only after exact font asset
+  evidence is available. It must support preview, snapshot, post-change probe
+  and rollback; never preload from an origin-only timing sample.
 
 ## P1 — Browser timing sample
 

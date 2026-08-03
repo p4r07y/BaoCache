@@ -47,6 +47,7 @@ final class BaoCache_Uninstall_Manager {
 			'baocache_csp_post_probe_ack_history', 'baocache_csp_post_probe_remediation',
 			'baocache_fastcgi_purge_evidence',
 			'baocache_critical_image_snapshot', 'baocache_critical_image_application',
+			'baocache_resource_hint_application',
 		) );
 	}
 
