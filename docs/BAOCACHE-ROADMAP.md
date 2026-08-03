@@ -101,6 +101,19 @@ No milestone is considered delivered when only UI or source code exists; it
 must also pass the stated evidence gate and be represented in the committed
 ZIP artifact.
 
+### Execution priority
+
+| Priority | Work | Release condition |
+| --- | --- | --- |
+| P0 — release integrity | Keep the version, committed ZIP and source identical; run the release scripts on every roadmap commit. | `scripts/validate-release.sh` passes. |
+| P1 — beta79 acceptance | Exercise third-party recommendations on staging: review candidates, apply, frontend probe and rollback. | Recorded PASS/FAIL compatibility matrix and one verified rollback. |
+| P2 — beta80 Commerce Optimizer | Deliver generic protected-route and fragment evidence before optional WooCommerce labels. | Protected cart/checkout/auth route matrix, scoped recommendation and rollback. |
+| P3 — beta81 adapters | Add optional Blocksy, Elementor and Bricks context without making them core dependencies. | Fresh-site proof that the generic engine works with no adapter active. |
+| P4 — integrations and advisor | Advance Cloudflare opt-in controls and risk-ranked Optimization Advisor only after the evidence layer is accepted. | Least-privilege integration proof, preview and explicit rollback. |
+
+P1 is the current blocker for a stable candidate. P2 may be implemented in
+parallel only when it does not replace or weaken that acceptance work.
+
 Các tỷ lệ là đánh giá phạm vi sản phẩm, không phải PageSpeed, health score hay
 phần trăm hoàn thành tự động. Stable vẫn yêu cầu QA thật trên staging và ít nhất
 một rollback thực tế thành công.
