@@ -31,6 +31,8 @@
 	const assetScanButtons = document.querySelectorAll('[data-baocache-scan-assets]');
 	const cloudflareAuditButton = document.querySelector('[data-baocache-cloudflare-audit]');
 	const cloudflareAuditResult = document.querySelector('[data-baocache-cloudflare-audit-result]');
+	const cloudflarePurgeButton = document.querySelector('[data-baocache-cloudflare-purge]');
+	const cloudflarePurgeUrl = document.querySelector('[data-baocache-cloudflare-purge-url]');
 	const clearFrontendMetricsButton = document.querySelector('[data-baocache-clear-frontend-metrics]');
 	const hardeningProbeButton = document.querySelector('[data-baocache-hardening-probe]');
 	const hardeningProbeResult = document.querySelector('[data-baocache-hardening-probe-result]');
@@ -1395,12 +1397,12 @@
 			cloudflareAuditButton.disabled = true;
 			setButtonLabel(cloudflareAuditButton, 'Đang kiểm tra…');
 			cloudflareAuditResult.hidden = false;
-			cloudflareAuditResult.textContent = 'Đang xác minh token và Zone…';
+			cloudflareAuditResult.textContent = 'Đang xác minh token, Zone và Cache Rules…';
 			try {
 				const data = await request({ action: 'baocache_cloudflare_audit', nonce: BaoCacheAdmin.cloudflareAuditNonce }, BaoCacheAdmin.cloudflareAuditError);
 				cloudflareAuditResult.replaceChildren();
 				const summary = document.createElement('strong');
-				summary.textContent = 'PASS · Cloudflare read-only audit';
+				summary.textContent = 'PASS · Cloudflare integration audit';
 				const details = document.createElement('dl');
 				[
 					['Token', data.token_verified ? 'Đã xác minh' : '—'],
@@ -1409,7 +1411,8 @@
 					['Zone type', data.zone_type || '—'],
 					['Zone paused', data.paused ? 'Có' : 'Không'],
 					['Development Mode', data.development_mode ? 'Bật' : 'Tắt'],
-					['Quyền thao tác', 'Chỉ đọc'],
+					['Cache Rules', data.cache_rules?.state === 'observed' ? `${data.cache_rules.count || 0} rule được quan sát` : 'Không đọc được (cần Zone Rulesets Read)'],
+					['Exact URL purge', data.purge_enabled ? 'Được bật riêng trong Coolify' : 'Đang khóa'],
 				].forEach(([key, value]) => {
 					const row = document.createElement('div');
 					const term = document.createElement('dt');
@@ -1420,7 +1423,7 @@
 					details.appendChild(row);
 				});
 				cloudflareAuditResult.append(summary, details);
-				showToast('Đã hoàn tất Cloudflare read-only audit.');
+				showToast('Đã hoàn tất Cloudflare integration audit.');
 			} catch (error) {
 				cloudflareAuditResult.textContent = error.message || BaoCacheAdmin.cloudflareAuditError;
 				showToast(error.message || BaoCacheAdmin.cloudflareAuditError, { error: true, duration: 5500 });
@@ -1428,6 +1431,21 @@
 				cloudflareAuditButton.disabled = false;
 				setButtonLabel(cloudflareAuditButton, label);
 			}
+		});
+	}
+
+	if (cloudflarePurgeButton && cloudflarePurgeUrl && window.BaoCacheAdmin) {
+		cloudflarePurgeButton.addEventListener('click', async () => {
+			const url = cloudflarePurgeUrl.value.trim();
+			if (!window.confirm(`Gửi exact URL purge tới Cloudflare?\n${url}`)) return;
+			const label = cloudflarePurgeButton.textContent;
+			cloudflarePurgeButton.disabled = true;
+			setButtonLabel(cloudflarePurgeButton, 'Đang purge…');
+			try {
+				const data = await request({ action: 'baocache_cloudflare_purge_url', nonce: BaoCacheAdmin.cloudflarePurgeNonce, url }, 'Không thể purge Cloudflare URL.');
+				showToast(data.message || 'Đã gửi Cloudflare exact URL purge.');
+			} catch (error) { showToast(error.message || 'Không thể purge Cloudflare URL.', { error: true, duration: 5500 }); }
+			finally { cloudflarePurgeButton.disabled = false; setButtonLabel(cloudflarePurgeButton, label); }
 		});
 	}
 

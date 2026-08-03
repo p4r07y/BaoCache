@@ -13,6 +13,7 @@ final class BaoCache_Admin {
 	private const string SCAN_ACTION = 'baocache_scan_assets';
 	private const string SNAPSHOT_ACTION = 'baocache_take_runtime_snapshot';
 	private const string CLOUDFLARE_AUDIT_ACTION = 'baocache_cloudflare_audit';
+	private const string CLOUDFLARE_PURGE_ACTION = 'baocache_cloudflare_purge_url';
 	private const string CLEAR_FRONTEND_METRICS_ACTION = 'baocache_clear_frontend_metrics';
 	private const string DELAY_PREVIEW_ACTION = 'baocache_delay_preview';
 	private const string HARDENING_PROBE_ACTION = 'baocache_probe_hardening';
@@ -79,6 +80,7 @@ final class BaoCache_Admin {
 		add_action( 'wp_ajax_' . self::SCAN_ACTION, array( $this, 'scan_assets_ajax' ) );
 		add_action( 'wp_ajax_' . self::SNAPSHOT_ACTION, array( $this, 'take_runtime_snapshot_ajax' ) );
 		add_action( 'wp_ajax_' . self::CLOUDFLARE_AUDIT_ACTION, array( $this, 'cloudflare_audit_ajax' ) );
+		add_action( 'wp_ajax_' . self::CLOUDFLARE_PURGE_ACTION, array( $this, 'cloudflare_purge_url_ajax' ) );
 		add_action( 'wp_ajax_' . self::CLEAR_FRONTEND_METRICS_ACTION, array( $this, 'clear_frontend_metrics_ajax' ) );
 		add_action( 'wp_ajax_' . self::PREVIEW_ACTION, array( $this, 'preview_asset_rule' ) );
 		add_action( 'wp_ajax_' . self::HARDENING_PROBE_ACTION, array( $this, 'probe_hardening_ajax' ) );
@@ -209,6 +211,7 @@ final class BaoCache_Admin {
 			'scanNonce' => wp_create_nonce( self::SCAN_ACTION ),
 			'snapshotNonce' => wp_create_nonce( self::SNAPSHOT_ACTION ),
 			'cloudflareAuditNonce' => wp_create_nonce( self::CLOUDFLARE_AUDIT_ACTION ),
+			'cloudflarePurgeNonce' => wp_create_nonce( self::CLOUDFLARE_PURGE_ACTION ),
 			'clearFrontendMetricsNonce' => wp_create_nonce( self::CLEAR_FRONTEND_METRICS_ACTION ),
 			'hardeningProbeNonce' => wp_create_nonce( self::HARDENING_PROBE_ACTION ),
 			'hardeningBaselineNonce' => wp_create_nonce( self::HARDENING_BASELINE_ACTION ),
@@ -1007,6 +1010,19 @@ final class BaoCache_Admin {
 		wp_send_json_success( $result );
 	}
 
+	public function cloudflare_purge_url_ajax(): void {
+		check_ajax_referer( self::CLOUDFLARE_PURGE_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền purge Cloudflare URL.', 'baocache' ) ), 403 );
+		$url = esc_url_raw( (string) wp_unslash( $_POST['url'] ?? '' ) );
+		$result = BaoCache_Cloudflare::purge_exact_url( $url );
+		if ( is_wp_error( $result ) ) {
+			BaoCache_Activity::log( 'cloudflare_purge', 'warning', __( 'Cloudflare exact URL purge không hoàn tất.', 'baocache' ), array( 'path' => BaoCache_Activity::safe_path( $url ) ) );
+			wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		}
+		BaoCache_Activity::log( 'cloudflare_purge', 'success', __( 'Đã gửi Cloudflare exact URL purge.', 'baocache' ), array( 'path' => BaoCache_Activity::safe_path( $url ) ) );
+		wp_send_json_success( array( 'message' => __( 'Đã gửi purge URL chính xác tới Cloudflare.', 'baocache' ) ) );
+	}
+
 	public function probe_hardening_ajax(): void {
 		check_ajax_referer( self::HARDENING_PROBE_ACTION, 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -1730,12 +1746,13 @@ final class BaoCache_Admin {
 			</section>
 
 			<section class="baocache-panel baocache-cloudflare-audit">
-				<div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Cloudflare read-only audit', 'baocache' ); ?></h2><p><?php esc_html_e( 'Chỉ xác minh API token và đọc trạng thái Zone. BaoCache không purge, thay đổi Cache Rules, DNS, WAF, SSL, Workers hay APO.', 'baocache' ); ?></p></div><span class="baocache-badge is-<?php echo esc_attr( $cloudflare_configuration['configured'] ? 'good' : 'neutral' ); ?>"><?php echo esc_html( $cloudflare_configuration['configured'] ? __( 'Ready', 'baocache' ) : __( 'Opt-in', 'baocache' ) ); ?></span></div>
+				<div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Cloudflare integration', 'baocache' ); ?></h2><p><?php esc_html_e( 'Đọc Zone và Cache Rules; exact URL purge chỉ mở khi Coolify bật biến riêng. BaoCache không sửa Cache Rules, DNS, WAF, SSL, Workers hay APO.', 'baocache' ); ?></p></div><span class="baocache-badge is-<?php echo esc_attr( $cloudflare_configuration['configured'] ? 'good' : 'neutral' ); ?>"><?php echo esc_html( $cloudflare_configuration['configured'] ? __( 'Ready', 'baocache' ) : __( 'Opt-in', 'baocache' ) ); ?></span></div>
 				<?php if ( $cloudflare_configuration['configured'] ) : ?>
 					<div class="baocache-cloudflare-audit__action"><div><strong><?php esc_html_e( 'Sẵn sàng kiểm tra', 'baocache' ); ?></strong><small><?php esc_html_e( 'Token chỉ được đọc từ Coolify environment tại thời điểm kiểm tra; không xuất ra JSON hoặc log.', 'baocache' ); ?></small></div><button type="button" class="button button-secondary" data-baocache-cloudflare-audit><?php esc_html_e( 'Chạy audit', 'baocache' ); ?></button></div>
 				<?php else : ?>
 					<div class="baocache-callout"><strong><?php esc_html_e( 'Chưa cấu hình trong Coolify', 'baocache' ); ?></strong><span><?php esc_html_e( 'Tạo Coolify Secret cho API token, thêm Zone ID và bật audit. Không có trường token trong wp-admin.', 'baocache' ); ?></span><small><?php echo esc_html( implode( ' · ', (array) $cloudflare_configuration['missing'] ) ); ?></small></div>
 				<?php endif; ?>
+				<?php if ( ! empty( $cloudflare_configuration['purge_enabled'] ) ) : ?><div class="baocache-cloudflare-audit__action"><div><strong><?php esc_html_e( 'Exact URL purge', 'baocache' ); ?></strong><small><?php esc_html_e( 'Chỉ URL công khai cùng domain, từng URL một. Không có purge all, host, prefix hoặc tag.', 'baocache' ); ?></small></div><input type="url" data-baocache-cloudflare-purge-url value="<?php echo esc_attr( home_url( '/' ) ); ?>" aria-label="<?php esc_attr_e( 'Cloudflare URL cần purge', 'baocache' ); ?>"><button type="button" class="button button-secondary" data-baocache-cloudflare-purge><?php esc_html_e( 'Purge URL', 'baocache' ); ?></button></div><?php elseif ( $cloudflare_configuration['configured'] ) : ?><div class="baocache-callout is-neutral"><strong><?php esc_html_e( 'Purge đang khóa', 'baocache' ); ?></strong><span><?php esc_html_e( 'Thêm quyền Cache Purge vào token và đặt BAOCACHE_CLOUDFLARE_PURGE_ENABLED=true trong Coolify để bật exact URL purge.', 'baocache' ); ?></span></div><?php endif; ?>
 				<div class="baocache-cloudflare-audit__result" data-baocache-cloudflare-audit-result hidden></div>
 			</section>
 			</section>
@@ -2055,6 +2072,7 @@ final class BaoCache_Admin {
 			'runtime_snapshot' => __( 'Runtime Snapshot', 'baocache' ),
 			'header_check' => __( 'Header Check', 'baocache' ),
 			'cloudflare_audit' => __( 'Cloudflare Audit', 'baocache' ),
+			'cloudflare_purge' => __( 'Cloudflare exact URL purge', 'baocache' ),
 			'analytics_config' => __( 'Analytics configuration', 'baocache' ),
 			'analytics_evidence' => __( 'Analytics public evidence', 'baocache' ),
 			'csp_reports_cleared' => __( 'CSP evidence cleared', 'baocache' ),

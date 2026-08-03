@@ -5,8 +5,8 @@ defined( 'ABSPATH' ) || exit;
  * Cloudflare audit boundary.
  *
  * This class is intentionally read-only: it verifies an environment-provided
- * API token and reads one Zone record. It contains no cache-purge, ruleset
- * mutation, DNS, WAF, SSL, Worker or APO endpoint.
+ * API token and reads one Zone record. Exact URL purge is separately opt-in;
+ * this class never mutates rulesets, DNS, WAF, SSL, Workers or APO.
  */
 final class BaoCache_Cloudflare {
 	private const string API = 'https://api.cloudflare.com/client/v4';
@@ -17,6 +17,7 @@ final class BaoCache_Cloudflare {
 		$zone_id = self::zone_id();
 		$has_token = '' !== self::token();
 		$ready = $enabled && '' !== $zone_id && $has_token;
+		$purge_enabled = filter_var( getenv( 'BAOCACHE_CLOUDFLARE_PURGE_ENABLED' ) ?: 'false', FILTER_VALIDATE_BOOLEAN );
 		$missing = array();
 		if ( ! $enabled ) $missing[] = 'BAOCACHE_CLOUDFLARE_AUDIT_ENABLED=true';
 		if ( '' === $zone_id ) $missing[] = 'BAOCACHE_CLOUDFLARE_ZONE_ID';
@@ -26,7 +27,8 @@ final class BaoCache_Cloudflare {
 			'enabled' => $enabled,
 			'configured' => $ready,
 			'missing' => $missing,
-			'mode' => 'read-only',
+			'mode' => $ready && $purge_enabled ? 'exact-url-purge' : 'read-only',
+			'purge_enabled' => $ready && $purge_enabled,
 		);
 	}
 
@@ -51,6 +53,7 @@ final class BaoCache_Cloudflare {
 		}
 
 		$result = $zone['result'];
+		$cache_rules = self::cache_rule_diagnostics();
 		return array(
 			'success' => true,
 			'state' => 'passed',
@@ -62,20 +65,54 @@ final class BaoCache_Cloudflare {
 			'paused' => ! empty( $result['paused'] ),
 			// Cloudflare returns seconds: positive means active, negative/zero means off.
 			'development_mode' => (int) ( $result['development_mode'] ?? 0 ) > 0,
+			'cache_rules' => $cache_rules,
+			'purge_enabled' => ! empty( $configuration['purge_enabled'] ),
 		);
 	}
 
+	/** Read only: exposes a bounded cache-rule count, never rule expressions. */
+	private static function cache_rule_diagnostics(): array {
+		$response = self::get( '/zones/' . rawurlencode( self::zone_id() ) . '/rulesets/phases/http_request_cache_settings/entrypoint' );
+		if ( ! $response['success'] || ! is_array( $response['result'] ) ) return array( 'state' => 'unavailable', 'count' => 0, 'http_status' => (int) $response['http_status'] );
+		return array( 'state' => 'observed', 'count' => count( (array) ( $response['result']['rules'] ?? array() ) ), 'http_status' => (int) $response['http_status'] );
+	}
+
+	/** @return array<string, mixed>|WP_Error */
+	public static function purge_exact_url( string $url ): array|WP_Error {
+		$configuration = self::configuration();
+		if ( empty( $configuration['purge_enabled'] ) ) return new WP_Error( 'cloudflare_purge_disabled', __( 'Cloudflare exact URL purge chưa được bật trong Coolify.', 'baocache' ) );
+		$url = esc_url_raw( $url );
+		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		$scheme = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) );
+		$home_host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+		if ( '' === $url || $host !== $home_host || ! in_array( $scheme, array( 'http', 'https' ), true ) || false !== strpos( $url, '#' ) ) return new WP_Error( 'invalid_cloudflare_purge_url', __( 'Chỉ được purge một URL công khai cùng domain, không fragment.', 'baocache' ) );
+		$response = self::post( '/zones/' . rawurlencode( self::zone_id() ) . '/purge_cache', array( 'files' => array( $url ) ) );
+		if ( ! $response['success'] ) return new WP_Error( 'cloudflare_purge_failed', __( 'Cloudflare không chấp nhận purge URL. Kiểm tra quyền Cache Purge và URL.', 'baocache' ) );
+		return array( 'purged' => true, 'request_id' => sanitize_key( (string) ( $response['result']['id'] ?? '' ) ) );
+	}
+
 	private static function get( string $path ): array {
-		$response = wp_remote_get(
+		return self::request( 'GET', $path );
+	}
+
+	private static function post( string $path, array $body ): array {
+		return self::request( 'POST', $path, $body );
+	}
+
+	private static function request( string $method, string $path, ?array $body = null ): array {
+		$args = array(
+			'method' => $method,
+			'timeout' => 10,
+			'redirection' => 0,
+			'headers' => array( 'Authorization' => 'Bearer ' . self::token(), 'Accept' => 'application/json' ),
+		);
+		if ( null !== $body ) {
+			$args['headers']['Content-Type'] = 'application/json';
+			$args['body'] = wp_json_encode( $body );
+		}
+		$response = wp_remote_request(
 			self::API . $path,
-			array(
-				'timeout' => 10,
-				'redirection' => 0,
-				'headers' => array(
-					'Authorization' => 'Bearer ' . self::token(),
-					'Accept' => 'application/json',
-				),
-			)
+			$args
 		);
 		if ( is_wp_error( $response ) ) {
 			return array( 'success' => false, 'http_status' => 0, 'result' => null );
