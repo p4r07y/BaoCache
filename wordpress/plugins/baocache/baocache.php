@@ -3,7 +3,7 @@
  * Plugin Name:       BaoCache
  * Plugin URI:        https://cupdienlamdong.com/
  * Description:       WordPress Performance Control Plane for Nginx FastCGI, Redis and Docker.
- * Version:           0.3.0-beta.82
+ * Version:           0.3.0-beta.83
  * Requires at least: 6.7
  * Requires PHP:      8.3
  * Author:            Nguyễn Hoàng Thái Bảo
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BAOCACHE_VERSION', '0.3.0-beta.82' );
+define( 'BAOCACHE_VERSION', '0.3.0-beta.83' );
 define( 'BAOCACHE_FILE', __FILE__ );
 define( 'BAOCACHE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BAOCACHE_URL', plugin_dir_url( __FILE__ ) );
@@ -42,6 +42,7 @@ require_once BAOCACHE_PATH . 'includes/class-resource-hints.php';
 require_once BAOCACHE_PATH . 'includes/class-third-party-optimizer.php';
 require_once BAOCACHE_PATH . 'includes/class-commerce-optimizer.php';
 require_once BAOCACHE_PATH . 'includes/class-theme-builder-adapters.php';
+require_once BAOCACHE_PATH . 'includes/class-optimization-advisor.php';
 require_once BAOCACHE_PATH . 'includes/class-admin.php';
 require_once BAOCACHE_PATH . 'includes/class-render-blocking.php';
 require_once BAOCACHE_PATH . 'includes/class-plugin.php';
