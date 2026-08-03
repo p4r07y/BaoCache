@@ -1740,6 +1740,7 @@ final class BaoCache_Admin {
 				</section>
 				<section class="baocache-panel baocache-site-diagnostics"><div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Site Diagnostics', 'baocache' ); ?></h2><p><?php esc_html_e( 'Kiểm tra tại thời điểm mở dashboard; không phải dữ liệu lịch sử.', 'baocache' ); ?></p></div><small><?php echo esc_html( sprintf( __( 'Kiểm tra %s', 'baocache' ), current_time( 'H:i' ) ) ); ?></small></div><div class="baocache-site-diagnostics__grid"><?php foreach ( $diagnostics as $diagnostic ) : ?><div><span class="baocache-badge is-<?php echo esc_attr( $diagnostic['state'] ); ?>"><?php echo esc_html( $diagnostic['status'] ); ?></span><strong><?php echo esc_html( $diagnostic['label'] ); ?></strong><small><?php echo esc_html( $diagnostic['detail'] ); ?></small></div><?php endforeach; ?></div></section>
 				<?php $this->compatibility_qa_panel(); ?>
+				<?php $this->stable_rc_panel(); ?>
 
 				<section class="baocache-panel baocache-runtime-history"><div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Runtime History', 'baocache' ); ?></h2><p><?php esc_html_e( 'Chỉ vẽ xu hướng từ snapshot thực; mỗi khoảng cần coverage đủ trước khi hiển thị.', 'baocache' ); ?></p></div></div><div class="baocache-runtime-history__grid"><?php foreach ( $metric_windows as $window ) : ?><?php $this->runtime_history_window( $window ); ?><?php endforeach; ?></div></section>
 
@@ -2025,6 +2026,23 @@ final class BaoCache_Admin {
 			<div class="baocache-compatibility-qa__table"><table><thead><tr><th><?php esc_html_e( 'Hạng mục', 'baocache' ); ?></th><th><?php esc_html_e( 'Phạm vi kiểm tra', 'baocache' ); ?></th><th><?php esc_html_e( 'Kết quả', 'baocache' ); ?></th></tr></thead><tbody><?php foreach ( $items as $id => $item ) : ?><tr><td><strong><?php echo esc_html( $item['label'] ); ?></strong></td><td><small><?php echo esc_html( $item['detail'] ); ?></small></td><td><select data-baocache-compatibility-check="<?php echo esc_attr( $id ); ?>"><option value="pending" <?php selected( (string) ( $checks[ $id ] ?? 'pending' ), 'pending' ); ?>><?php esc_html_e( 'Chưa test', 'baocache' ); ?></option><option value="pass" <?php selected( (string) ( $checks[ $id ] ?? '' ), 'pass' ); ?>><?php esc_html_e( 'PASS', 'baocache' ); ?></option><option value="fail" <?php selected( (string) ( $checks[ $id ] ?? '' ), 'fail' ); ?>><?php esc_html_e( 'FAIL', 'baocache' ); ?></option><option value="skip" <?php selected( (string) ( $checks[ $id ] ?? '' ), 'skip' ); ?>><?php esc_html_e( 'Bỏ qua', 'baocache' ); ?></option></select></td></tr><?php endforeach; ?></tbody></table></div>
 			<div class="baocache-compatibility-qa__actions"><button type="button" class="button button-primary" data-baocache-save-compatibility-qa><?php esc_html_e( 'Lưu kết quả QA', 'baocache' ); ?></button><button type="button" class="button button-secondary" data-baocache-reset-compatibility-qa><?php esc_html_e( 'Reset checklist', 'baocache' ); ?></button><output data-baocache-compatibility-qa-result></output></div>
 		</section>
+		<?php
+	}
+
+	private function stable_rc_panel(): void {
+		$qa = get_option( 'baocache_compatibility_qa', array() );
+		$checks = is_array( $qa ) && is_array( $qa['checks'] ?? null ) ? $qa['checks'] : array();
+		$qa_pass = ! empty( $checks ) && ! in_array( 'pending', $checks, true ) && ! in_array( 'fail', $checks, true );
+		$application = BaoCache_Site_Overrides::application();
+		$cloudflare = BaoCache_Cloudflare::configuration();
+		$gates = array(
+			array( 'state' => $qa_pass ? 'good' : 'warn', 'label' => __( 'Compatibility QA', 'baocache' ), 'detail' => $qa_pass ? __( 'Recorded PASS; keep rollback evidence with the release.', 'baocache' ) : __( 'Staging PASS/FAIL record is still required.', 'baocache' ) ),
+			array( 'state' => ! empty( $application['rolled_back_at'] ) ? 'good' : 'warn', 'label' => __( 'Site Overrides rollback', 'baocache' ), 'detail' => ! empty( $application['rolled_back_at'] ) ? __( 'Import rollback has been recorded.', 'baocache' ) : __( 'Export, import and rollback must be exercised on staging.', 'baocache' ) ),
+			array( 'state' => is_multisite() ? 'warn' : 'good', 'label' => __( 'Topology', 'baocache' ), 'detail' => is_multisite() ? __( 'Multisite remains unsupported pending network evidence.', 'baocache' ) : __( 'Single-site is the supported production topology.', 'baocache' ) ),
+			array( 'state' => ! empty( $cloudflare['configured'] ) ? 'neutral' : 'neutral', 'label' => __( 'Cloudflare', 'baocache' ), 'detail' => ! empty( $cloudflare['configured'] ) ? __( 'Run audit and record token-scope evidence if this integration is used.', 'baocache' ) : __( 'Optional; no Cloudflare evidence is required when not configured.', 'baocache' ) ),
+		);
+		?>
+		<section class="baocache-panel baocache-site-diagnostics" data-baocache-pane="dashboard"><div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Stable RC readiness', 'baocache' ); ?></h2><p><?php esc_html_e( 'Các gate release còn mở. Đây không phải phần trăm hoàn thành hay performance score.', 'baocache' ); ?></p></div><span class="baocache-badge is-warn"><?php esc_html_e( 'Evidence required', 'baocache' ); ?></span></div><div class="baocache-site-diagnostics__grid"><?php foreach ( $gates as $gate ) : ?><div><span class="baocache-badge is-<?php echo esc_attr( $gate['state'] ); ?>"><?php echo esc_html( 'good' === $gate['state'] ? __( 'PASS', 'baocache' ) : ( 'warn' === $gate['state'] ? __( 'OPEN', 'baocache' ) : __( 'Optional', 'baocache' ) ) ); ?></span><strong><?php echo esc_html( $gate['label'] ); ?></strong><small><?php echo esc_html( $gate['detail'] ); ?></small></div><?php endforeach; ?></div></section>
 		<?php
 	}
 
