@@ -94,7 +94,7 @@ the target deployment.
 | --- | --- | --- | --- |
 | beta78 — Automatic Resource & Font Hints | Delivered in beta | Derive bounded cross-origin origin/font recommendations from observed Asset Inventory evidence; cap hints; never blind-preload | Evidence fingerprint, recommendation diff, apply/rollback and cache invalidation implemented; staging probe remains open |
 | beta79 — Third-party Optimizer | Delivered in beta | Handle/dependency-aware classification and conservative delay recommendations for independent third-party scripts | Evidence fingerprint, review-required risk labels and apply/rollback implemented; browser compatibility matrix remains open |
-| beta80 — Commerce Optimizer | Planned | Generic cart/checkout detection plus optional WooCommerce metadata | Protected-route matrix, fragment evidence and rollback |
+| beta80 — Commerce Optimizer | In progress — evidence foundation | Generic cart/checkout detection plus optional WooCommerce metadata | Protected-route matrix, fragment evidence and rollback |
 | Stable RC | Blocked by acceptance | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
 
 No milestone is considered delivered when only UI or source code exists; it
@@ -148,7 +148,7 @@ infrastructure rather than a feature stream.
 | **beta77.1 — Data Retention & BaoCache Database Health (delivered)** | Keeps configuration by default across reinstall, provides explicit full removal, self-checks owned schema/config/cron, and reports autoload size read-only. | Runtime is always disposable; exact cleanup registry only; no wildcard option deletion, no `DROP TABLE`, and no WordPress/third-party repair. |
 | **beta78 — Automatic Resource & Font Hints (delivered)** | Recommend bounded preconnect and font preload hints from observed Asset Inventory evidence. | Validate the same resource fingerprint; cap hints; apply/rollback is explicit; no blind preload. |
 | **beta79 — Third-party Optimizer (delivered foundation)** | Classify third-party scripts by origin, risk and dependency context; offer conservative delay recommendations. | Handle/dependency-aware only; preview, staging QA and rollback required. |
-| **beta80 — Commerce Optimizer** | Generic cart/checkout detection plus optional WooCommerce metadata for fragment, asset and cache-bypass recommendations. | Checkout/authenticated routes are protected by default; no adapter-only core logic. |
+| **beta80 — Commerce Optimizer (in progress)** | Generic cart/checkout protection baseline, optional WooCommerce route metadata and observed fragment/payment handles before any recommendation. | Read-only evidence first; checkout/authenticated routes are protected by default; no adapter-only core logic. |
 | **beta81 — Theme & Builder Adapters** | Optional Blocksy, Elementor and Bricks metadata/constraints for clearer recommendations. | Core uses observed handles/DOM; adapters add labels and exclusions only. |
 | **beta82 — Cloudflare Integration** | Read-only audit evolves into explicit, opt-in URL purge and cache-rule diagnostics. | Coolify secrets only; least privilege; no DNS/WAF/SSL/APO mutation without separate confirmation. |
 | **beta83 — Optimization Advisor** | Risk-ranked recommendations with expected mechanism, evidence, scope, preview and one-click safe apply. | Deterministic rules first; any AI explanation is advisory and cannot bypass gates. |
