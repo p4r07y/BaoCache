@@ -4,6 +4,10 @@
 
 **BaoCache — WordPress Performance Control Plane for Nginx FastCGI, Redis and Docker.**
 
+The consolidated v1 product, UI/UX and release plan is maintained in
+[`BAOCACHE-V1-DELIVERY-PLAN.md`](BAOCACHE-V1-DELIVERY-PLAN.md). Feature work
+after beta83 follows that order rather than adding unrelated beta modules.
+
 BaoCache is not a WP Rocket clone. Its job is to make a real infrastructure
 stack observable, controllable and safe from WordPress, without claiming data it
 cannot verify.
