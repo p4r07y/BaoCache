@@ -4,6 +4,10 @@ Run this after deploying the committed ZIP to staging. Record PASS, FAIL or
 Not Applicable in **BaoCache → Staging Compatibility QA**; do not infer a PASS
 from an empty error log.
 
+Before the manual checks, run `BAOCACHE_STAGING_URL=https://staging.example.com
+scripts/run-staging-smoke.sh`. Override the three route paths only when the site
+uses different account, cart or checkout slugs.
+
 1. Activate BaoCache on a fresh staging WordPress site and open every workspace.
 2. Export Site Overrides, import them into a second staging site, verify the
    intended rules, then use **Rollback import** and verify the prior settings.
