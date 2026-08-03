@@ -53,6 +53,9 @@ final class BaoCache_Admin {
 	private const string THIRD_PARTY_SCAN_ACTION = 'baocache_scan_third_party';
 	private const string THIRD_PARTY_APPLY_ACTION = 'baocache_apply_third_party';
 	private const string THIRD_PARTY_ROLLBACK_ACTION = 'baocache_rollback_third_party';
+	private const string COMMERCE_SCAN_ACTION = 'baocache_scan_commerce';
+	private const string COMMERCE_APPLY_ACTION = 'baocache_apply_commerce';
+	private const string COMMERCE_ROLLBACK_ACTION = 'baocache_rollback_commerce';
 	private const string DATABASE_CHECK_ACTION = 'baocache_database_check';
 	private const string DATABASE_REPAIR_ACTION = 'baocache_database_repair';
 	private const string DATABASE_CLEAN_ACTION = 'baocache_database_clean_runtime';
@@ -110,6 +113,9 @@ final class BaoCache_Admin {
 		add_action( 'wp_ajax_' . self::THIRD_PARTY_SCAN_ACTION, array( $this, 'scan_third_party_ajax' ) );
 		add_action( 'wp_ajax_' . self::THIRD_PARTY_APPLY_ACTION, array( $this, 'apply_third_party_ajax' ) );
 		add_action( 'wp_ajax_' . self::THIRD_PARTY_ROLLBACK_ACTION, array( $this, 'rollback_third_party_ajax' ) );
+		add_action( 'wp_ajax_' . self::COMMERCE_SCAN_ACTION, array( $this, 'scan_commerce_ajax' ) );
+		add_action( 'wp_ajax_' . self::COMMERCE_APPLY_ACTION, array( $this, 'apply_commerce_ajax' ) );
+		add_action( 'wp_ajax_' . self::COMMERCE_ROLLBACK_ACTION, array( $this, 'rollback_commerce_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_CHECK_ACTION, array( $this, 'database_check_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_REPAIR_ACTION, array( $this, 'database_repair_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_CLEAN_ACTION, array( $this, 'database_clean_runtime_ajax' ) );
@@ -233,6 +239,9 @@ final class BaoCache_Admin {
 			'thirdPartyScanNonce' => wp_create_nonce( self::THIRD_PARTY_SCAN_ACTION ),
 			'thirdPartyApplyNonce' => wp_create_nonce( self::THIRD_PARTY_APPLY_ACTION ),
 			'thirdPartyRollbackNonce' => wp_create_nonce( self::THIRD_PARTY_ROLLBACK_ACTION ),
+			'commerceScanNonce' => wp_create_nonce( self::COMMERCE_SCAN_ACTION ),
+			'commerceApplyNonce' => wp_create_nonce( self::COMMERCE_APPLY_ACTION ),
+			'commerceRollbackNonce' => wp_create_nonce( self::COMMERCE_ROLLBACK_ACTION ),
 			'databaseCheckNonce' => wp_create_nonce( self::DATABASE_CHECK_ACTION ),
 			'databaseRepairNonce' => wp_create_nonce( self::DATABASE_REPAIR_ACTION ),
 			'databaseCleanNonce' => wp_create_nonce( self::DATABASE_CLEAN_ACTION ),
@@ -748,6 +757,35 @@ final class BaoCache_Admin {
 		$this->queue_frontend_cache_invalidation();
 		BaoCache_Activity::log( 'third_party_rollback', 'success', __( 'Đã rollback third-party delay recommendation.', 'baocache' ) );
 		wp_send_json_success( array( 'message' => __( 'Đã rollback third-party delay về cấu hình trước đó.', 'baocache' ) ) );
+	}
+
+	public function scan_commerce_ajax(): void {
+		check_ajax_referer( self::COMMERCE_SCAN_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền phân tích commerce evidence.', 'baocache' ) ), 403 );
+		$result = BaoCache_Commerce_Optimizer::scan();
+		BaoCache_Activity::log( 'commerce_scan', 'success', __( 'Đã tạo commerce protection evidence.', 'baocache' ), array( 'routes' => (string) $result['candidate_count'], 'fingerprint' => substr( (string) $result['fingerprint'], 0, 12 ) ) );
+		wp_send_json_success( array( 'count' => (int) $result['candidate_count'], 'fingerprint' => (string) $result['fingerprint'] ) );
+	}
+
+	public function apply_commerce_ajax(): void {
+		check_ajax_referer( self::COMMERCE_APPLY_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền áp dụng commerce protection.', 'baocache' ) ), 403 );
+		$fingerprint = sanitize_text_field( (string) wp_unslash( $_POST['fingerprint'] ?? '' ) );
+		$result = BaoCache_Commerce_Optimizer::apply( $fingerprint );
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation();
+		BaoCache_Activity::log( 'commerce_apply', 'success', __( 'Đã áp dụng protected commerce routes vào exclusion list.', 'baocache' ), array( 'fingerprint' => substr( $fingerprint, 0, 12 ) ) );
+		wp_send_json_success( array( 'message' => __( 'Đã bảo vệ route commerce đã xác minh và xếp hàng purge frontend.', 'baocache' ) ) );
+	}
+
+	public function rollback_commerce_ajax(): void {
+		check_ajax_referer( self::COMMERCE_ROLLBACK_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền rollback commerce protection.', 'baocache' ) ), 403 );
+		$result = BaoCache_Commerce_Optimizer::rollback();
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation();
+		BaoCache_Activity::log( 'commerce_rollback', 'success', __( 'Đã rollback protected commerce routes.', 'baocache' ) );
+		wp_send_json_success( array( 'message' => __( 'Đã rollback commerce protection về exclusion list trước đó.', 'baocache' ) ) );
 	}
 
 	public function rollback_critical_image_ajax(): void {
@@ -1795,12 +1833,12 @@ final class BaoCache_Admin {
 						<div class="baocache-purge-actions"><button type="button" class="button button-secondary" data-baocache-scan-third-party><?php esc_html_e( 'Phân tích third-party', 'baocache' ); ?></button><?php if ( ! empty( $third_party_candidates ) ) : ?><button type="button" class="button button-primary" data-baocache-apply-third-party data-fingerprint="<?php echo esc_attr( (string) ( $third_party_snapshot['fingerprint'] ?? '' ) ); ?>"><?php esc_html_e( 'Apply delay candidates', 'baocache' ); ?></button><?php endif; ?><?php if ( ! empty( $third_party_application['applied_at'] ) && empty( $third_party_application['rolled_back_at'] ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-third-party><?php esc_html_e( 'Rollback', 'baocache' ); ?></button><?php endif; ?><output data-baocache-third-party-result><?php echo esc_html( ! empty( $third_party_candidates ) ? sprintf( __( '%d candidate · fingerprint %s', 'baocache' ), count( $third_party_candidates ), substr( (string) ( $third_party_snapshot['fingerprint'] ?? '' ), 0, 12 ) ) : __( 'Chưa có recommendation. Hãy quét Asset Inventory trước.', 'baocache' ) ); ?></output></div>
 					</article>
 
-					<?php $commerce_report = BaoCache_Commerce_Optimizer::report(); ?>
+					<?php $commerce_snapshot = BaoCache_Commerce_Optimizer::snapshot(); $commerce_application = BaoCache_Commerce_Optimizer::application(); $commerce_report = ! empty( $commerce_snapshot ) ? $commerce_snapshot : BaoCache_Commerce_Optimizer::report(); ?>
 					<article class="baocache-panel baocache-panel--wide baocache-assets-workspace" data-baocache-pane="assets">
 						<div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Commerce protection evidence', 'baocache' ); ?></h2><p><?php esc_html_e( 'Beta80 khởi đầu bằng báo cáo chỉ đọc: xác định route và fragment cần bảo vệ trước mọi cache hoặc asset recommendation.', 'baocache' ); ?></p></div><span class="baocache-badge is-warn"><?php esc_html_e( 'beta80 · Evidence only', 'baocache' ); ?></span></div>
-						<div class="baocache-callout is-neutral"><strong><?php echo esc_html( ! empty( $commerce_report['woocommerce_active'] ) ? __( 'WooCommerce metadata detected', 'baocache' ) : __( 'Generic protection baseline', 'baocache' ) ); ?></strong><span><?php echo esc_html( 'inventory_observed' === (string) $commerce_report['evidence_status'] ? __( 'Asset Inventory đã được dùng để dò handle fragment/payment. Báo cáo này không tự áp dụng thay đổi.', 'baocache' ) : __( 'Chưa có Asset Inventory; route protection vẫn ở chế độ baseline. Quét Assets để có fragment evidence.', 'baocache' ) ); ?></span></div>
+						<div class="baocache-callout is-neutral"><strong><?php echo esc_html( ! empty( $commerce_report['woocommerce_active'] ) ? __( 'WooCommerce metadata detected', 'baocache' ) : __( 'Generic protection baseline', 'baocache' ) ); ?></strong><span><?php echo esc_html( 'inventory_observed' === (string) $commerce_report['evidence_status'] ? __( 'Asset Inventory đã được dùng để dò handle fragment/payment. Chỉ route được metadata xác minh mới có thể thêm vào exclusion; BaoCache không đổi cache strategy.', 'baocache' ) : __( 'Chưa có Asset Inventory; route protection vẫn ở chế độ baseline. Quét Assets để có fragment evidence.', 'baocache' ) ); ?></span></div>
 						<div class="baocache-two-columns"><div class="baocache-field"><span><?php esc_html_e( 'Protected contexts', 'baocache' ); ?></span><p><?php echo esc_html( implode( ' · ', (array) $commerce_report['protected_contexts'] ) ); ?></p></div><div class="baocache-field"><span><?php esc_html_e( 'Detected fragment/payment handles', 'baocache' ); ?></span><p><?php echo esc_html( ! empty( $commerce_report['fragment_handles'] ) ? implode( ' · ', (array) $commerce_report['fragment_handles'] ) : __( 'Chưa có handle được xác minh.', 'baocache' ) ); ?></p></div></div>
-						<?php if ( ! empty( $commerce_report['protected_routes'] ) ) : ?><ul class="baocache-third-party-list"><?php foreach ( (array) $commerce_report['protected_routes'] as $route ) : ?><li><code><?php echo esc_html( (string) ( $route['path'] ?? '' ) ); ?></code><small><?php echo esc_html( (string) ( $route['source'] ?? '' ) ); ?></small></li><?php endforeach; ?></ul><?php else : ?><p class="baocache-analysis-note"><?php esc_html_e( 'Chưa xác minh được cart/checkout/account route từ metadata. BaoCache không đoán URL và không thay đổi exclusion.', 'baocache' ); ?></p><?php endif; ?>
+						<?php if ( ! empty( $commerce_report['protected_routes'] ) ) : ?><ul class="baocache-third-party-list"><?php foreach ( (array) $commerce_report['protected_routes'] as $route ) : ?><li><code><?php echo esc_html( (string) ( $route['path'] ?? '' ) ); ?></code><small><?php echo esc_html( (string) ( $route['source'] ?? '' ) ); ?></small></li><?php endforeach; ?></ul><?php else : ?><p class="baocache-analysis-note"><?php esc_html_e( 'Chưa xác minh được cart/checkout/account route từ metadata. BaoCache không đoán URL và không thay đổi exclusion.', 'baocache' ); ?></p><?php endif; ?><div class="baocache-purge-actions"><button type="button" class="button button-secondary" data-baocache-scan-commerce><?php esc_html_e( 'Quét commerce evidence', 'baocache' ); ?></button><?php if ( ! empty( $commerce_snapshot['protected_routes'] ) ) : ?><button type="button" class="button button-primary" data-baocache-apply-commerce data-fingerprint="<?php echo esc_attr( (string) ( $commerce_snapshot['fingerprint'] ?? '' ) ); ?>"><?php esc_html_e( 'Bảo vệ route đã xác minh', 'baocache' ); ?></button><?php endif; ?><?php if ( ! empty( $commerce_application['applied_at'] ) && empty( $commerce_application['rolled_back_at'] ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-commerce><?php esc_html_e( 'Rollback', 'baocache' ); ?></button><?php endif; ?><output data-baocache-commerce-result><?php echo esc_html( ! empty( $commerce_snapshot ) ? sprintf( __( '%d route · fingerprint %s', 'baocache' ), (int) ( $commerce_snapshot['candidate_count'] ?? 0 ), substr( (string) ( $commerce_snapshot['fingerprint'] ?? '' ), 0, 12 ) ) : __( 'Chưa có snapshot. Quét commerce evidence trước khi áp dụng.', 'baocache' ) ); ?></output></div>
 					</article>
 
 					<article class="baocache-panel baocache-panel--wide baocache-resource-workspace" data-baocache-pane="resources">
@@ -1999,6 +2037,9 @@ final class BaoCache_Admin {
 			'third_party_scan' => __( 'Third-party Scan', 'baocache' ),
 			'third_party_apply' => __( 'Third-party Apply', 'baocache' ),
 			'third_party_rollback' => __( 'Third-party Rollback', 'baocache' ),
+			'commerce_scan' => __( 'Commerce Scan', 'baocache' ),
+			'commerce_apply' => __( 'Commerce Apply', 'baocache' ),
+			'commerce_rollback' => __( 'Commerce Rollback', 'baocache' ),
 			'database_repair' => __( 'BaoCache Database Repair', 'baocache' ),
 			'database_runtime_cleanup' => __( 'BaoCache Runtime Cleanup', 'baocache' ),
 			'compatibility_qa' => __( 'Staging Compatibility QA', 'baocache' ),

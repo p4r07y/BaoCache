@@ -6,6 +6,61 @@ defined( 'ABSPATH' ) || exit;
  * that must remain protected before any cache or asset recommendation exists.
  */
 final class BaoCache_Commerce_Optimizer {
+	private const SNAPSHOT_OPTION = 'baocache_commerce_snapshot';
+	private const APPLICATION_OPTION = 'baocache_commerce_application';
+
+	public static function snapshot(): array {
+		$value = get_option( self::SNAPSHOT_OPTION, array() );
+		return is_array( $value ) ? $value : array();
+	}
+
+	public static function application(): array {
+		$value = get_option( self::APPLICATION_OPTION, array() );
+		return is_array( $value ) ? $value : array();
+	}
+
+	/** @return array<string, mixed> */
+	public static function scan(): array {
+		$report = self::report();
+		$report['scanned_at'] = time();
+		$report['candidate_count'] = count( (array) $report['protected_routes'] );
+		update_option( self::SNAPSHOT_OPTION, $report, false );
+		return $report;
+	}
+
+	/** @return array<string, mixed>|WP_Error */
+	public static function apply( string $fingerprint ): array|WP_Error {
+		$snapshot = self::snapshot();
+		if ( '' === $fingerprint || ! hash_equals( (string) ( $snapshot['fingerprint'] ?? '' ), $fingerprint ) ) return new WP_Error( 'stale_commerce_evidence', __( 'Commerce evidence đã cũ. Hãy quét lại trước khi áp dụng.', 'baocache' ) );
+		$routes = is_array( $snapshot['protected_routes'] ?? null ) ? $snapshot['protected_routes'] : array();
+		if ( empty( $routes ) ) return new WP_Error( 'no_commerce_routes', __( 'Chưa có commerce route được metadata xác minh để áp dụng.', 'baocache' ) );
+		$settings = BaoCache_Settings::get();
+		$before = (string) $settings['render_blocking_exclude_urls'];
+		$paths = BaoCache_Settings::lines( $before );
+		foreach ( $routes as $route ) {
+			$path = (string) ( is_array( $route ) ? ( $route['path'] ?? '' ) : '' );
+			if ( '' !== $path && ! in_array( $path, $paths, true ) ) $paths[] = $path;
+		}
+		$settings['render_blocking_exclude_urls'] = implode( "\n", $paths );
+		update_option( BAOCACHE_OPTION, $settings, false );
+		$record = array( 'applied_at' => time(), 'snapshot_fingerprint' => $fingerprint, 'before' => $before, 'after' => $settings['render_blocking_exclude_urls'], 'rolled_back_at' => 0 );
+		update_option( self::APPLICATION_OPTION, $record, false );
+		return array( 'snapshot' => $snapshot, 'application' => $record );
+	}
+
+	/** @return array<string, mixed>|WP_Error */
+	public static function rollback(): array|WP_Error {
+		$record = self::application();
+		if ( empty( $record['applied_at'] ) || ! empty( $record['rolled_back_at'] ) ) return new WP_Error( 'nothing_to_rollback', __( 'Không có commerce protection apply đang hoạt động để rollback.', 'baocache' ) );
+		$settings = BaoCache_Settings::get();
+		if ( (string) $settings['render_blocking_exclude_urls'] !== (string) ( $record['after'] ?? '' ) ) return new WP_Error( 'stale_commerce_application', __( 'Exclusion URL đã thay đổi sau apply; rollback tự động bị chặn.', 'baocache' ) );
+		$settings['render_blocking_exclude_urls'] = (string) ( $record['before'] ?? '' );
+		update_option( BAOCACHE_OPTION, $settings, false );
+		$record['rolled_back_at'] = time();
+		update_option( self::APPLICATION_OPTION, $record, false );
+		return $record;
+	}
+
 	/** @return array<string, mixed> */
 	public static function report(): array {
 		$inventory = get_transient( 'baocache_asset_inventory' );

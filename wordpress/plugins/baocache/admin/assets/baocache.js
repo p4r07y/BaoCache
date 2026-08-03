@@ -92,6 +92,10 @@
 	const thirdPartyApplyButton = document.querySelector('[data-baocache-apply-third-party]');
 	const thirdPartyRollbackButton = document.querySelector('[data-baocache-rollback-third-party]');
 	const thirdPartyResult = document.querySelector('[data-baocache-third-party-result]');
+	const commerceScanButton = document.querySelector('[data-baocache-scan-commerce]');
+	const commerceApplyButton = document.querySelector('[data-baocache-apply-commerce]');
+	const commerceRollbackButton = document.querySelector('[data-baocache-rollback-commerce]');
+	const commerceResult = document.querySelector('[data-baocache-commerce-result]');
 	const retentionKeep = document.querySelector('[data-baocache-retention-keep]');
 	const retentionHistory = document.querySelector('[data-baocache-retention-history]');
 	const retentionRemove = document.querySelector('[data-baocache-retention-remove]');
@@ -842,6 +846,42 @@
 				showToast(data.message || 'Đã rollback third-party delay.');
 			} catch (error) { showToast(error.message || 'Không thể rollback third-party delay.', { error: true }); }
 			finally { thirdPartyRollbackButton.disabled = false; }
+		});
+	}
+
+	if (commerceScanButton && window.BaoCacheAdmin) {
+		commerceScanButton.addEventListener('click', async () => {
+			commerceScanButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_scan_commerce', nonce: BaoCacheAdmin.commerceScanNonce }, 'Không thể quét commerce evidence.');
+				if (commerceResult) commerceResult.textContent = `${data.count} route · fingerprint ${String(data.fingerprint).slice(0, 12)}. Tải lại trang để áp dụng.`;
+				showToast('Đã tạo commerce protection evidence.');
+			} catch (error) { showToast(error.message || 'Không thể quét commerce evidence.', { error: true }); }
+			finally { commerceScanButton.disabled = false; }
+		});
+	}
+
+	if (commerceApplyButton && window.BaoCacheAdmin) {
+		commerceApplyButton.addEventListener('click', async () => {
+			commerceApplyButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_apply_commerce', nonce: BaoCacheAdmin.commerceApplyNonce, fingerprint: commerceApplyButton.dataset.fingerprint || '' }, 'Không thể áp dụng commerce protection.');
+				if (commerceResult) commerceResult.textContent = data.message || 'Đã áp dụng.';
+				showToast(data.message || 'Đã bảo vệ route commerce.');
+			} catch (error) { showToast(error.message || 'Không thể áp dụng commerce protection.', { error: true }); }
+			finally { commerceApplyButton.disabled = false; }
+		});
+	}
+
+	if (commerceRollbackButton && window.BaoCacheAdmin) {
+		commerceRollbackButton.addEventListener('click', async () => {
+			commerceRollbackButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_rollback_commerce', nonce: BaoCacheAdmin.commerceRollbackNonce }, 'Không thể rollback commerce protection.');
+				if (commerceResult) commerceResult.textContent = data.message || 'Đã rollback.';
+				showToast(data.message || 'Đã rollback commerce protection.');
+			} catch (error) { showToast(error.message || 'Không thể rollback commerce protection.', { error: true }); }
+			finally { commerceRollbackButton.disabled = false; }
 		});
 	}
 
