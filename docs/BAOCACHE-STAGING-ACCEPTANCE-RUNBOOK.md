@@ -5,8 +5,10 @@ Not Applicable in **BaoCache → Staging Compatibility QA**; do not infer a PASS
 from an empty error log.
 
 Before the manual checks, run `BAOCACHE_STAGING_URL=https://staging.example.com
-scripts/run-staging-smoke.sh`. Override the three route paths only when the site
-uses different account, cart or checkout slugs.
+scripts/run-staging-smoke.sh`. It checks only the homepage by default. For a
+commerce site, add real routes explicitly: `BAOCACHE_STAGING_PATHS='/ /account/
+/cart/ /checkout/' BAOCACHE_STAGING_URL=https://staging.example.com
+scripts/run-staging-smoke.sh`.
 
 1. Activate BaoCache on a fresh staging WordPress site and open every workspace.
 2. Export Site Overrides, import them into a second staging site, verify the

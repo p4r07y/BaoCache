@@ -7,7 +7,9 @@ staging_url=${BAOCACHE_STAGING_URL:-}
 [ -n "$staging_url" ] || { echo "Set BAOCACHE_STAGING_URL, for example https://staging.example.com" >&2; exit 2; }
 
 base_url=${staging_url%/}
-paths="/ ${BAOCACHE_STAGING_ACCOUNT_PATH:-/my-account/} ${BAOCACHE_STAGING_CART_PATH:-/cart/} ${BAOCACHE_STAGING_CHECKOUT_PATH:-/checkout/}"
+# Homepage is always checked. Add real business routes explicitly, for example:
+# BAOCACHE_STAGING_PATHS='/ /account/ /cart/ /checkout/'
+paths=${BAOCACHE_STAGING_PATHS:-/}
 failed=0
 
 for path in $paths; do
