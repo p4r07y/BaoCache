@@ -26,8 +26,6 @@ Features:
 * Smart asset scopes for URL, post type, and the presence or absence of a shortcode or block.
 * Measured Asset Insights: largest local asset, third-party sources, duplicate registered sources and head-script placement.
 * Preconnect, DNS-prefetch and preload controls.
-* Evidence-driven Automatic Resource & Font Hints with bounded preview, apply
-  and stale-guarded rollback; origin-only timing never becomes a blind preload.
 * LCP image assistance for an administrator-verified WordPress attachment URL.
 * Optional public TTL sent through `X-Accel-Expires`; it never replaces a TTL already sent by another plugin.
 * Redis object-cache flush plus an authenticated exact-URL FastCGI purge when
@@ -100,12 +98,13 @@ logged out on staging before enabling them for visitors.
 
 = 0.3.0-beta.78 =
 
-* Added evidence-driven Automatic Resource & Font Hints.
-* Added bounded origin fingerprinting, deduplication and confidence evidence
-  from the latest opt-in Resource Timing sample.
-* Added explicit preview/apply for up to three safe connection hints and
-  stale-guarded rollback. BaoCache never invents preload URLs from origin-only
-  evidence.
+* Added evidence-based Automatic Resource & Font Hints recommendations with bounded origin/font candidates, stale fingerprints, apply/rollback and frontend cache invalidation.
+* Reworked admin feedback into compact non-layout toasts, retained purpose-grouped Quick Actions, clarified Security policy status and improved Asset Explorer table density.
+
+= 0.3.0-beta.77.2 =
+
+* Queued exact-key FastCGI invalidation for the homepage and feed after frontend settings, Critical Image apply/rollback, and Critical CSS rollback.
+* Fixed the public smoke test header check for macOS and other awk implementations without `IGNORECASE`.
 
 = 0.3.0-beta.77.1 =
 

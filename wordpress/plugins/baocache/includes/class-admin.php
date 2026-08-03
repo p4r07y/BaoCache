@@ -47,11 +47,12 @@ final class BaoCache_Admin {
 	private const string CRITICAL_IMAGE_SCAN_ACTION = 'baocache_scan_critical_images';
 	private const string CRITICAL_IMAGE_APPLY_ACTION = 'baocache_apply_critical_image';
 	private const string CRITICAL_IMAGE_ROLLBACK_ACTION = 'baocache_rollback_critical_image';
+	private const string RESOURCE_HINT_SCAN_ACTION = 'baocache_scan_resource_hints';
+	private const string RESOURCE_HINT_APPLY_ACTION = 'baocache_apply_resource_hints';
+	private const string RESOURCE_HINT_ROLLBACK_ACTION = 'baocache_rollback_resource_hints';
 	private const string DATABASE_CHECK_ACTION = 'baocache_database_check';
 	private const string DATABASE_REPAIR_ACTION = 'baocache_database_repair';
 	private const string DATABASE_CLEAN_ACTION = 'baocache_database_clean_runtime';
-	private const string RESOURCE_HINT_APPLY_ACTION = 'baocache_apply_resource_hints';
-	private const string RESOURCE_HINT_ROLLBACK_ACTION = 'baocache_rollback_resource_hints';
 
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
@@ -100,11 +101,12 @@ final class BaoCache_Admin {
 		add_action( 'wp_ajax_' . self::CRITICAL_IMAGE_SCAN_ACTION, array( $this, 'scan_critical_images_ajax' ) );
 		add_action( 'wp_ajax_' . self::CRITICAL_IMAGE_APPLY_ACTION, array( $this, 'apply_critical_image_ajax' ) );
 		add_action( 'wp_ajax_' . self::CRITICAL_IMAGE_ROLLBACK_ACTION, array( $this, 'rollback_critical_image_ajax' ) );
+		add_action( 'wp_ajax_' . self::RESOURCE_HINT_SCAN_ACTION, array( $this, 'scan_resource_hints_ajax' ) );
+		add_action( 'wp_ajax_' . self::RESOURCE_HINT_APPLY_ACTION, array( $this, 'apply_resource_hints_ajax' ) );
+		add_action( 'wp_ajax_' . self::RESOURCE_HINT_ROLLBACK_ACTION, array( $this, 'rollback_resource_hints_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_CHECK_ACTION, array( $this, 'database_check_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_REPAIR_ACTION, array( $this, 'database_repair_ajax' ) );
 		add_action( 'wp_ajax_' . self::DATABASE_CLEAN_ACTION, array( $this, 'database_clean_runtime_ajax' ) );
-		add_action( 'wp_ajax_' . self::RESOURCE_HINT_APPLY_ACTION, array( $this, 'apply_resource_hints_ajax' ) );
-		add_action( 'wp_ajax_' . self::RESOURCE_HINT_ROLLBACK_ACTION, array( $this, 'rollback_resource_hints_ajax' ) );
 		add_action( self::HARDENING_PROBE_TICK, array( $this, 'run_scheduled_probe' ) );
 		add_action( self::GATE_REVIEW_TICK, array( $this, 'run_gate_evidence_review' ) );
 		add_action( 'init', array( $this, 'ensure_probe_schedule' ), 25 );
@@ -219,11 +221,12 @@ final class BaoCache_Admin {
 			'criticalImageScanNonce' => wp_create_nonce( self::CRITICAL_IMAGE_SCAN_ACTION ),
 			'criticalImageApplyNonce' => wp_create_nonce( self::CRITICAL_IMAGE_APPLY_ACTION ),
 			'criticalImageRollbackNonce' => wp_create_nonce( self::CRITICAL_IMAGE_ROLLBACK_ACTION ),
+			'resourceHintScanNonce' => wp_create_nonce( self::RESOURCE_HINT_SCAN_ACTION ),
+			'resourceHintApplyNonce' => wp_create_nonce( self::RESOURCE_HINT_APPLY_ACTION ),
+			'resourceHintRollbackNonce' => wp_create_nonce( self::RESOURCE_HINT_ROLLBACK_ACTION ),
 			'databaseCheckNonce' => wp_create_nonce( self::DATABASE_CHECK_ACTION ),
 			'databaseRepairNonce' => wp_create_nonce( self::DATABASE_REPAIR_ACTION ),
 			'databaseCleanNonce' => wp_create_nonce( self::DATABASE_CLEAN_ACTION ),
-			'resourceHintApplyNonce' => wp_create_nonce( self::RESOURCE_HINT_APPLY_ACTION ),
-			'resourceHintRollbackNonce' => wp_create_nonce( self::RESOURCE_HINT_ROLLBACK_ACTION ),
 			'inspectError' => __( 'Không thể kiểm tra response header.', 'baocache' ),
 			'saveError' => __( 'Không thể lưu cấu hình. Hãy thử lại.', 'baocache' ),
 			'warmupError' => __( 'Không thể đọc sitemap. Hãy kiểm tra lại cấu hình.', 'baocache' ),
@@ -261,8 +264,6 @@ final class BaoCache_Admin {
 			'databaseCheckError' => __( 'Không thể kiểm tra dữ liệu BaoCache.', 'baocache' ),
 			'databaseRepairError' => __( 'Không thể sửa cấu trúc dữ liệu BaoCache.', 'baocache' ),
 			'databaseCleanError' => __( 'Không thể dọn dữ liệu runtime BaoCache.', 'baocache' ),
-			'resourceHintApplyError' => __( 'Không thể áp dụng resource hints. Hãy phân tích lại evidence.', 'baocache' ),
-			'resourceHintRollbackError' => __( 'Không thể rollback resource hints.', 'baocache' ),
 		) );
 	}
 
@@ -391,11 +392,32 @@ final class BaoCache_Admin {
 		}
 		( new BaoCache_Warmup() )->ensure_scheduled();
 		$this->ensure_probe_schedule();
+		$purge = $this->queue_frontend_cache_invalidation();
 		if ( (string) $settings['analytics_id'] !== (string) $previous_settings['analytics_id'] || (bool) $settings['analytics_enabled'] !== (bool) $previous_settings['analytics_enabled'] || (bool) $settings['clarity_enabled'] !== (bool) $previous_settings['clarity_enabled'] || (bool) $settings['analytics_auto_events'] !== (bool) $previous_settings['analytics_auto_events'] || (array) $settings['analytics_adapters'] !== (array) $previous_settings['analytics_adapters'] || (bool) $settings['analytics_duplicate_ack'] !== (bool) $previous_settings['analytics_duplicate_ack'] ) {
 			BaoCache_Activity::log( 'analytics_config', 'success', __( 'Đã cập nhật Analytics & Tracking.', 'baocache' ), array( 'provider' => BaoCache_Settings::tracking_id_type( (string) $settings['analytics_id'] ), 'consent' => (string) $settings['analytics_consent_mode'], 'events' => ! empty( $settings['analytics_auto_events'] ) ? 'enabled' : 'disabled', 'clarity' => ! empty( $settings['clarity_enabled'] ) ? 'enabled' : 'disabled', 'adapters' => (string) count( (array) $settings['analytics_adapters'] ), 'duplicate_ack' => ! empty( $settings['analytics_duplicate_ack'] ) ? 'acknowledged' : 'pending' ) );
 		}
 		BaoCache_Activity::log( 'settings_saved', 'success', __( 'Đã lưu cấu hình BaoCache.', 'baocache' ) );
-		wp_send_json_success( array( 'warm_enabled' => (bool) $settings['warm_enabled'], 'warm_sitemap' => (string) $settings['warm_sitemap'] ) );
+		wp_send_json_success( array( 'warm_enabled' => (bool) $settings['warm_enabled'], 'warm_sitemap' => (string) $settings['warm_sitemap'], 'frontend_cache_invalidation' => $purge ) );
+	}
+
+	/**
+	 * Queue exact-key invalidation for the public routes whose HTML is always
+	 * affected by frontend settings. Nginx deliberately has no wildcard purge;
+	 * sitemap/content changes continue to use the existing URL queue.
+	 *
+	 * @return array{queued: int, available: bool}
+	 */
+	private function queue_frontend_cache_invalidation(): array {
+		$urls = array( home_url( '/' ) );
+		if ( function_exists( 'get_feed_link' ) ) {
+			$urls[] = get_feed_link();
+		}
+		$urls = array_values( array_unique( array_filter( array_map( 'esc_url_raw', $urls ) ) ) );
+		$purge = new BaoCache_Purge();
+		foreach ( $urls as $url ) {
+			$purge->queue_url( $url );
+		}
+		return array( 'queued' => count( $urls ), 'available' => BaoCache_Purge::available() );
 	}
 
 	public function database_check_ajax(): void {
@@ -650,11 +672,43 @@ final class BaoCache_Admin {
 		$verified = ! is_wp_error( $probe ) && 200 <= (int) $probe['status'] && 299 >= (int) $probe['status'] && ! in_array( false, $verification, true );
 		if ( ! $verified ) {
 			$rollback = BaoCache_Critical_Images::rollback();
+			$this->queue_frontend_cache_invalidation();
 			BaoCache_Activity::log( 'critical_image_apply', 'failed', __( 'Post-change probe không xác minh đủ output; BaoCache đã rollback.', 'baocache' ), array( 'present' => ! empty( $verification['present'] ) ? 'yes' : 'no', 'preload' => ! empty( $verification['preload'] ) ? 'yes' : 'no', 'priority' => ! empty( $verification['fetchpriority'] ) ? 'yes' : 'no', 'rollback' => is_wp_error( $rollback ) ? 'failed' : 'success' ) );
 			wp_send_json_error( array( 'message' => __( 'Post-change probe không thấy đủ image, preload và fetchpriority; thay đổi đã được rollback.', 'baocache' ), 'verification' => $verification ), 422 );
 		}
+		$this->queue_frontend_cache_invalidation();
 		BaoCache_Activity::log( 'critical_image_apply', 'success', __( 'Đã áp dụng và xác minh critical image candidate.', 'baocache' ), array( 'path' => BaoCache_Activity::safe_path( (string) $candidate['url'] ), 'confidence' => (string) (int) ( $candidate['confidence'] ?? 0 ) ) );
 		wp_send_json_success( array( 'candidate' => $candidate, 'verification' => $verification ) );
+	}
+
+	public function scan_resource_hints_ajax(): void {
+		check_ajax_referer( self::RESOURCE_HINT_SCAN_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền quét Resource Hints.', 'baocache' ) ), 403 );
+		$result = BaoCache_Resource_Hints::scan();
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		BaoCache_Activity::log( 'resource_hints_scan', 'success', __( 'Đã tạo recommendation Resource & Font Hints từ Asset Inventory evidence.', 'baocache' ), array( 'candidates' => (string) $result['candidate_count'], 'fingerprint' => substr( (string) $result['fingerprint'], 0, 12 ) ) );
+		wp_send_json_success( array( 'count' => (int) $result['candidate_count'], 'fingerprint' => (string) $result['fingerprint'] ) );
+	}
+
+	public function apply_resource_hints_ajax(): void {
+		check_ajax_referer( self::RESOURCE_HINT_APPLY_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền áp dụng Resource Hints.', 'baocache' ) ), 403 );
+		$fingerprint = sanitize_text_field( (string) wp_unslash( $_POST['fingerprint'] ?? '' ) );
+		$result = BaoCache_Resource_Hints::apply( $fingerprint );
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation();
+		BaoCache_Activity::log( 'resource_hints_apply', 'success', __( 'Đã áp dụng recommendation Resource & Font Hints.', 'baocache' ), array( 'fingerprint' => substr( $fingerprint, 0, 12 ) ) );
+		wp_send_json_success( array( 'message' => __( 'Đã áp dụng Resource & Font Hints và xếp hàng purge frontend.', 'baocache' ) ) );
+	}
+
+	public function rollback_resource_hints_ajax(): void {
+		check_ajax_referer( self::RESOURCE_HINT_ROLLBACK_ACTION, 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'Bạn không có quyền rollback Resource Hints.', 'baocache' ) ), 403 );
+		$result = BaoCache_Resource_Hints::rollback();
+		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
+		$this->queue_frontend_cache_invalidation();
+		BaoCache_Activity::log( 'resource_hints_rollback', 'success', __( 'Đã rollback Resource & Font Hints.', 'baocache' ) );
+		wp_send_json_success( array( 'message' => __( 'Đã rollback Resource & Font Hints về cấu hình trước đó.', 'baocache' ) ) );
 	}
 
 	public function rollback_critical_image_ajax(): void {
@@ -666,6 +720,7 @@ final class BaoCache_Admin {
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
 		}
+		$this->queue_frontend_cache_invalidation();
 		BaoCache_Activity::log( 'critical_image_rollback', 'success', __( 'Đã rollback Automatic Critical Image.', 'baocache' ) );
 		wp_send_json_success( array( 'message' => __( 'Đã rollback Critical Image về cấu hình trước đó.', 'baocache' ) ) );
 	}
@@ -678,33 +733,6 @@ final class BaoCache_Admin {
 		BaoCache_Frontend_Metrics::clear();
 		BaoCache_Activity::log( 'frontend_timing_cleared', 'success', __( 'Đã xóa Browser Resource Timing tổng hợp.', 'baocache' ) );
 		wp_send_json_success();
-	}
-
-	public function apply_resource_hints_ajax(): void {
-		check_ajax_referer( self::RESOURCE_HINT_APPLY_ACTION, 'nonce' );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Bạn không có quyền áp dụng resource hints.', 'baocache' ) ), 403 );
-		}
-		$ids = isset( $_POST['ids'] ) && is_array( $_POST['ids'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['ids'] ) ) : array();
-		$result = BaoCache_Resource_Hints::apply_safe_origins( $ids );
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
-		}
-		BaoCache_Activity::log( 'resource_hints_applied', 'success', __( 'Đã áp dụng origin hints từ Resource Timing evidence.', 'baocache' ), array( 'count' => (string) ( $result['count'] ?? 0 ) ) );
-		wp_send_json_success( array( 'message' => sprintf( __( 'Đã áp dụng %d origin hint an toàn.', 'baocache' ), (int) ( $result['count'] ?? 0 ) ) ) );
-	}
-
-	public function rollback_resource_hints_ajax(): void {
-		check_ajax_referer( self::RESOURCE_HINT_ROLLBACK_ACTION, 'nonce' );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Bạn không có quyền rollback resource hints.', 'baocache' ) ), 403 );
-		}
-		$result = BaoCache_Resource_Hints::rollback();
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ), 422 );
-		}
-		BaoCache_Activity::log( 'resource_hints_rollback', 'success', __( 'Đã rollback origin hints về cấu hình trước đó.', 'baocache' ) );
-		wp_send_json_success( array( 'message' => __( 'Đã rollback resource hints.', 'baocache' ) ) );
 	}
 
 	public function apply_csp_recommendation_ajax(): void {
@@ -1066,6 +1094,7 @@ final class BaoCache_Admin {
 		$record['enabled'] = false;
 		$record['rolled_back_at'] = time();
 		update_option( 'baocache_critical_css', $record, false );
+		$this->queue_frontend_cache_invalidation();
 		BaoCache_Render_Blocking::record_strategy( 'critical-css', 'inline', 'Administrator rollback', 'frontend', true );
 		BaoCache_Activity::log( 'critical_css_rollback', 'success', __( 'Đã rollback Critical CSS.', 'baocache' ) );
 		wp_send_json_success( array( 'rolled_back' => true ) );
@@ -1515,19 +1544,7 @@ final class BaoCache_Admin {
 		$fastcgi_diagnostics = BaoCache_Diagnostics::fastcgi_metrics();
 		$activity = BaoCache_Activity::recent();
 		$metric_windows = array( BaoCache_Metrics::window( 24 ), BaoCache_Metrics::window( 7 * 24 ), BaoCache_Metrics::window( 30 * 24 ) );
-		$healthy_runtime = count( array_filter( $health, static fn( array $item ): bool => 'good' === (string) ( $item['state'] ?? '' ) ) );
-		$hardening_keys = array( 'disable_xmlrpc', 'disable_self_pingback', 'disable_trackbacks', 'hide_login_errors', 'disable_application_passwords', 'remove_rsd', 'remove_wlw', 'remove_shortlink', 'remove_x_pingback', 'remove_feed_links', 'remove_rest_api_link', 'disable_rest_user_enumeration', 'disable_file_editor', 'disable_attachment_pages', 'disable_author_enumeration' );
-		$hardening_total = count( $hardening_keys ) + 2;
-		$hardening_enabled = count( array_filter( $hardening_keys, static fn( string $key ): bool => ! empty( $settings[ $key ] ) ) ) + ( 'keep' !== (string) $settings['rss_mode'] ? 1 : 0 ) + ( 'off' !== (string) ( $settings['asset_version_masking'] ?? 'off' ) ? 1 : 0 );
 		$analytics_type = ! empty( $settings['analytics_enabled'] ) ? BaoCache_Settings::tracking_id_type( (string) $settings['analytics_id'] ) : '';
-		$mission = array(
-			array( 'label' => __( 'Overall Health', 'baocache' ), 'value' => sprintf( '%1$d/%2$d', $healthy_runtime, count( $health ) ), 'meta' => __( 'runtime checks PASS', 'baocache' ), 'state' => $healthy_runtime === count( $health ) ? 'good' : 'warn', 'tab' => 'diagnostics' ),
-			array( 'label' => __( 'Performance', 'baocache' ), 'value' => (string) ( $status[0]['value'] ?? '—' ), 'meta' => __( 'FastCGI 24h', 'baocache' ), 'state' => (string) ( $status[0]['state'] ?? 'neutral' ), 'tab' => 'cache' ),
-			array( 'label' => __( 'Security', 'baocache' ), 'value' => sprintf( '%1$d/%2$d', $hardening_enabled, $hardening_total ), 'meta' => __( 'hardening controls enabled', 'baocache' ), 'state' => 14 <= $hardening_enabled ? 'good' : 'warn', 'tab' => 'security' ),
-			array( 'label' => __( 'Analytics', 'baocache' ), 'value' => 'ga4' === $analytics_type ? 'GA4' : ( 'gtm' === $analytics_type ? 'GTM' : __( 'Not configured', 'baocache' ) ), 'meta' => '' !== $analytics_type ? __( 'local injection ready', 'baocache' ) : __( 'optional integration', 'baocache' ), 'state' => '' !== $analytics_type ? 'good' : 'neutral', 'tab' => 'analytics' ),
-			array( 'label' => __( 'Cloudflare', 'baocache' ), 'value' => ! empty( $cloudflare_configuration['configured'] ) ? __( 'Ready', 'baocache' ) : __( 'Optional', 'baocache' ), 'meta' => __( 'read-only audit', 'baocache' ), 'state' => ! empty( $cloudflare_configuration['configured'] ) ? 'good' : 'neutral', 'tab' => 'cloudflare' ),
-			array( 'label' => __( 'Optimization', 'baocache' ), 'value' => (string) count( $overview['recommendations'] ), 'meta' => __( 'active recommendations', 'baocache' ), 'state' => count( $overview['recommendations'] ) > 0 ? 'warn' : 'good', 'tab' => 'dashboard' ),
-		);
 		?>
 		<div class="wrap baocache">
 			<?php $this->notices(); ?>
@@ -1558,10 +1575,6 @@ final class BaoCache_Admin {
 				</header>
 
 			<section class="baocache-dashboard-shell">
-				<section class="baocache-mission-control" data-baocache-pane="dashboard" aria-label="<?php esc_attr_e( 'BaoCache Mission Control', 'baocache' ); ?>">
-					<div class="baocache-mission-control__title"><span class="dashicons dashicons-dashboard"></span><div><strong><?php esc_html_e( 'Mission Control', 'baocache' ); ?></strong><small><?php esc_html_e( 'Trạng thái có thể kiểm chứng; không phải điểm Lighthouse.', 'baocache' ); ?></small></div></div>
-					<div class="baocache-mission-control__metrics"><?php foreach ( $mission as $item ) : ?><button type="button" data-baocache-go="<?php echo esc_attr( $item['tab'] ); ?>"><span><?php echo esc_html( $item['label'] ); ?></span><strong><?php echo esc_html( $item['value'] ); ?></strong><small><i class="is-<?php echo esc_attr( $item['state'] ); ?>"></i><?php echo esc_html( $item['meta'] ); ?></small></button><?php endforeach; ?></div>
-				</section>
 				<section class="baocache-dashboard-grid" data-baocache-pane="dashboard">
 					<article class="baocache-panel baocache-health"><div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'System Health', 'baocache' ); ?></h2><p><?php echo esc_html( $overview['runtime'] ); ?></p></div></div><ul><?php foreach ( $health as $check ) : ?><li><span class="baocache-badge is-<?php echo esc_attr( $check['state'] ); ?>"><?php echo esc_html( $check['status'] ); ?></span><strong><?php echo esc_html( $check['label'] ); ?></strong><span><?php echo esc_html( $check['value'] ); ?></span></li><?php endforeach; ?></ul></article>
 					<article class="baocache-panel baocache-quick-actions"><div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Quick Actions', 'baocache' ); ?></h2><p><?php esc_html_e( 'Nhóm theo mục đích thay vì ma trận nút.', 'baocache' ); ?></p></div></div><div class="baocache-action-groups"><section><strong><?php esc_html_e( 'Diagnostics', 'baocache' ); ?></strong><button type="button" class="button button-primary" data-baocache-diagnostics-shortcut><?php esc_html_e( 'Run Diagnostics', 'baocache' ); ?></button><button type="button" class="button button-secondary" data-baocache-inspect-shortcut><?php esc_html_e( 'Check Cache', 'baocache' ); ?></button></section><section><strong><?php esc_html_e( 'Optimization', 'baocache' ); ?></strong><button type="button" class="button button-secondary" data-baocache-scan-shortcut><?php esc_html_e( 'Scan Assets', 'baocache' ); ?></button><button type="button" class="button button-secondary" data-baocache-warm-shortcut><?php esc_html_e( 'Warm Queue', 'baocache' ); ?></button></section><section><strong><?php esc_html_e( 'Export', 'baocache' ); ?></strong><a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=' . self::EXPORT_ACTION ), self::EXPORT_ACTION ) ); ?>"><?php esc_html_e( 'Download JSON', 'baocache' ); ?></a></section></div></article>
@@ -1658,7 +1671,7 @@ final class BaoCache_Admin {
 
 					<?php $hardening_keys = array( 'disable_xmlrpc', 'disable_self_pingback', 'disable_trackbacks', 'hide_login_errors', 'disable_application_passwords', 'remove_rsd', 'remove_wlw', 'remove_shortlink', 'remove_x_pingback', 'remove_feed_links', 'remove_rest_api_link', 'disable_rest_user_enumeration', 'disable_file_editor', 'disable_attachment_pages', 'disable_author_enumeration' ); $hardening_enabled = count( array_filter( $hardening_keys, static fn( string $key ): bool => ! empty( $settings[ $key ] ) ) ) + ( 'keep' !== $settings['rss_mode'] ? 1 : 0 ) + ( 'off' !== (string) ( $settings['asset_version_masking'] ?? 'off' ) ? 1 : 0 ); ?>
 					<details class="baocache-panel baocache-panel--wide baocache-disclosure" data-baocache-pane="security">
-						<summary class="baocache-disclosure__summary"><span><strong><?php esc_html_e( 'WordPress Hardening', 'baocache' ); ?><small><?php esc_html_e( 'Giảm bề mặt WordPress; không thay thế WAF, firewall, malware scan hoặc 2FA.', 'baocache' ); ?></small></span><span class="baocache-disclosure__meta"><span class="baocache-badge is-neutral"><?php echo esc_html( sprintf( __( '%d/17 bật', 'baocache' ), $hardening_enabled ) ); ?></span><span class="baocache-disclosure__chevron" aria-hidden="true">+</span></span></summary>
+						<summary class="baocache-disclosure__summary"><span><strong><?php esc_html_e( 'WordPress Hardening', 'baocache' ); ?><small><?php esc_html_e( 'Giảm bề mặt WordPress; không thay thế WAF, firewall, malware scan hoặc 2FA.', 'baocache' ); ?></small></span><span class="baocache-disclosure__meta"><span class="baocache-badge is-neutral"><?php echo esc_html( sprintf( __( '%d policy đang bật', 'baocache' ), $hardening_enabled ) ); ?></span><span class="baocache-disclosure__chevron" aria-hidden="true">+</span></span></summary>
 						<div class="baocache-disclosure__body">
 						<div class="baocache-two-columns baocache-hardening-grid">
 							<div>
@@ -1743,10 +1756,8 @@ final class BaoCache_Admin {
 							<?php $this->textarea( 'dns_prefetch', __( 'DNS prefetch URL', 'baocache' ), $settings, 'https://cdn.example.com' ); ?>
 							<?php $this->textarea( 'preload', __( 'Preload URL', 'baocache' ), $settings, 'https://example.com/wp-content/uploads/hero.webp' ); ?>
 						</div>
-					</article>
-
-					<article class="baocache-panel baocache-panel--wide baocache-resource-workspace baocache-auto-hints" data-baocache-pane="resources">
-						<?php $this->automatic_resource_hints_panel( $settings ); ?>
+						<?php $hint_snapshot = BaoCache_Resource_Hints::snapshot(); $hint_application = BaoCache_Resource_Hints::application(); $hint_candidates = is_array( $hint_snapshot['candidates'] ?? null ) ? $hint_snapshot['candidates'] : array(); ?>
+						<div class="baocache-callout" data-baocache-resource-hints><strong><?php esc_html_e( 'Automatic Resource & Font Hints · beta78', 'baocache' ); ?></strong><span><?php esc_html_e( 'Đề xuất tối đa 6 origin và 4 font từ Asset Inventory đã quan sát. Không preload mù; fingerprint cũ sẽ bị chặn.', 'baocache' ); ?></span><?php if ( ! empty( $hint_candidates ) ) : ?><ul class="baocache-resource-hint-list"><?php foreach ( $hint_candidates as $hint ) : ?><li><code><?php echo esc_html( (string) ( $hint['value'] ?? '' ) ); ?></code><small><?php echo esc_html( 'preconnect' === (string) ( $hint['type'] ?? '' ) ? __( 'Origin evidence', 'baocache' ) : __( 'Font evidence · preload', 'baocache' ) ); ?></small></li><?php endforeach; ?></ul><?php endif; ?><div class="baocache-purge-actions"><button type="button" class="button button-secondary" data-baocache-scan-resource-hints><?php esc_html_e( 'Tạo recommendation từ inventory', 'baocache' ); ?></button><?php if ( ! empty( $hint_candidates ) ) : ?><button type="button" class="button button-primary" data-baocache-apply-resource-hints data-fingerprint="<?php echo esc_attr( (string) ( $hint_snapshot['fingerprint'] ?? '' ) ); ?>"><?php esc_html_e( 'Apply recommendation', 'baocache' ); ?></button><?php endif; ?><?php if ( ! empty( $hint_application['applied_at'] ) && empty( $hint_application['rolled_back_at'] ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-resource-hints><?php esc_html_e( 'Rollback', 'baocache' ); ?></button><?php endif; ?><output data-baocache-resource-hints-result><?php echo esc_html( ! empty( $hint_candidates ) ? sprintf( __( '%d candidate · fingerprint %s', 'baocache' ), count( $hint_candidates ), substr( (string) ( $hint_snapshot['fingerprint'] ?? '' ), 0, 12 ) ) : __( 'Chưa có recommendation. Hãy chạy Asset Inventory trước.', 'baocache' ) ); ?></output></div></div>
 					</article>
 
 					<article class="baocache-panel baocache-panel--wide baocache-resource-workspace baocache-critical-images" data-baocache-pane="resources">
@@ -1928,8 +1939,6 @@ final class BaoCache_Admin {
 			'critical_image_scan' => __( 'Critical Image Scan', 'baocache' ),
 			'critical_image_apply' => __( 'Critical Image Apply', 'baocache' ),
 			'critical_image_rollback' => __( 'Critical Image Rollback', 'baocache' ),
-			'resource_hints_applied' => __( 'Resource Hints Applied', 'baocache' ),
-			'resource_hints_rollback' => __( 'Resource Hints Rollback', 'baocache' ),
 			'database_repair' => __( 'BaoCache Database Repair', 'baocache' ),
 			'database_runtime_cleanup' => __( 'BaoCache Runtime Cleanup', 'baocache' ),
 			'compatibility_qa' => __( 'Staging Compatibility QA', 'baocache' ),
@@ -2111,29 +2120,6 @@ final class BaoCache_Admin {
 			</div>
 		<?php endif; ?>
 		<div class="baocache-callout is-neutral baocache-critical-images__guard"><strong><?php esc_html_e( 'Safety boundary', 'baocache' ); ?></strong><span><?php esc_html_e( 'Chỉ xử lý ảnh <img> cùng domain. BaoCache chưa tự sửa CSS background, tự tạo dimensions/srcset hoặc gọi một candidate là LCP. Apply phải PASS post-change probe; nếu không, thay đổi được rollback ngay.', 'baocache' ); ?></span></div>
-		<?php
-	}
-
-	private function automatic_resource_hints_panel( array $settings ): void {
-		$items = BaoCache_Resource_Hints::recommendations( $settings );
-		$sample = BaoCache_Frontend_Metrics::latest();
-		$application = BaoCache_Resource_Hints::application();
-		$recorded = ! empty( $sample['recorded_at'] ) ? wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $sample['recorded_at'] ) : '';
-		$active_ids = is_array( $application['ids'] ?? null ) ? $application['ids'] : array();
-		?>
-		<div class="baocache-panel__heading"><div><h2><?php esc_html_e( 'Automatic Resource & Font Hints', 'baocache' ); ?></h2><p><?php esc_html_e( 'Đề xuất dựa trên Resource Timing thật; chỉ thêm connection hint đã được xác minh, không tự đoán preload.', 'baocache' ); ?></p></div><span class="baocache-badge is-<?php echo empty( $items ) ? 'neutral' : 'good'; ?>"><?php echo empty( $items ) ? esc_html__( 'No evidence', 'baocache' ) : esc_html__( 'Evidence-driven', 'baocache' ); ?></span></div>
-		<?php if ( '' === $recorded ) : ?>
-			<div class="baocache-callout is-neutral"><strong><?php esc_html_e( 'Chưa có Resource Timing sample', 'baocache' ); ?></strong><span><?php esc_html_e( 'Bật Browser Resource Timing trong WordPress, mở frontend ở chế độ khách rồi quay lại đây để phân tích origin thực tế.', 'baocache' ); ?></span></div>
-		<?php else : ?>
-			<div class="baocache-auto-hints__meta"><span><?php echo esc_html( sprintf( __( 'Sample gần nhất: %s', 'baocache' ), $recorded ) ); ?></span><span><?php echo esc_html( sprintf( _n( '%d origin candidate', '%d origin candidates', count( $items ), 'baocache' ), count( $items ) ) ); ?></span></div>
-			<?php if ( empty( $items ) ) : ?><div class="baocache-callout is-good"><strong><?php esc_html_e( 'Không có origin mới cần thêm', 'baocache' ); ?></strong><span><?php esc_html_e( 'Các origin đã được deduplicate hoặc chưa đủ bằng chứng để tạo hint.', 'baocache' ); ?></span><?php if ( ! empty( $active_ids ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-resource-hints><?php esc_html_e( 'Rollback lần apply gần nhất', 'baocache' ); ?></button><?php endif; ?></div><?php else : ?>
-				<div class="baocache-auto-hints__list">
-					<?php foreach ( $items as $item ) : ?><label class="baocache-auto-hint"><input type="checkbox" value="<?php echo esc_attr( (string) $item['id'] ); ?>" data-baocache-resource-hint-choice><span class="baocache-auto-hint__main"><strong><?php echo esc_html( (string) $item['origin'] ); ?></strong><small><?php echo esc_html( sprintf( __( '%1$s · %2$d request · %3$d ms · %4$s', 'baocache' ), 'preconnect' === $item['action'] ? 'Preconnect' : 'DNS-prefetch', (int) $item['count'], (int) $item['duration_ms'], size_format( (int) $item['transfer_bytes'] ) ) ); ?></small><small><?php echo esc_html( (string) $item['reason'] ); ?></small></span><span class="baocache-badge is-<?php echo 70 <= (int) $item['score'] ? 'good' : 'warn'; ?>"><?php echo esc_html( (string) $item['score'] . '% confidence' ); ?></span></label><?php endforeach; ?>
-				</div>
-				<div class="baocache-auto-hints__actions"><button type="button" class="button button-primary" data-baocache-apply-resource-hints><?php esc_html_e( 'Apply safe origin hints', 'baocache' ); ?></button><?php if ( ! empty( $active_ids ) ) : ?><button type="button" class="button button-secondary" data-baocache-rollback-resource-hints><?php esc_html_e( 'Rollback lần apply gần nhất', 'baocache' ); ?></button><?php endif; ?><span data-baocache-resource-hints-result aria-live="polite"></span></div>
-			<?php endif; ?>
-		<?php endif; ?>
-		<div class="baocache-callout is-neutral"><strong><?php esc_html_e( 'Safety boundary', 'baocache' ); ?></strong><span><?php esc_html_e( 'Origin sample không có exact URL, nên BaoCache không tự preload CSS, JS hoặc font. Preload và font-display chỉ được đề xuất khi có asset URL/CSS evidence riêng.', 'baocache' ); ?></span></div>
 		<?php
 	}
 
@@ -2691,13 +2677,13 @@ final class BaoCache_Admin {
 	private function notices(): void {
 		$flush = sanitize_key( (string) ( $_GET['baocache_flush'] ?? '' ) );
 		if ( 'success' === $flush ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Đã flush Redis object cache.', 'baocache' ) . '</p></div>';
+			echo '<div class="baocache-server-feedback" data-baocache-server-feedback="success">' . esc_html__( 'Đã flush Redis object cache.', 'baocache' ) . '</div>';
 		} elseif ( 'failed' === $flush ) {
-			echo '<div class="notice notice-error"><p>' . esc_html__( 'Không thể flush object cache.', 'baocache' ) . '</p></div>';
+			echo '<div class="baocache-server-feedback" data-baocache-server-feedback="error">' . esc_html__( 'Không thể flush object cache.', 'baocache' ) . '</div>';
 		}
 		$warmup = sanitize_key( (string) ( $_GET['baocache_warmup'] ?? '' ) );
 		if ( 'empty' === $warmup ) {
-			echo '<div class="notice notice-warning"><p>' . esc_html__( 'Không thêm được URL. Kiểm tra đã bật warm queue, sitemap cùng domain và sitemap có dữ liệu.', 'baocache' ) . '</p></div>';
+			echo '<div class="baocache-server-feedback" data-baocache-server-feedback="error">' . esc_html__( 'Không thêm được URL. Kiểm tra đã bật warm queue, sitemap cùng domain và sitemap có dữ liệu.', 'baocache' ) . '</div>';
 		}
 	}
 

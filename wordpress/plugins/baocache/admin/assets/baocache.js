@@ -84,6 +84,10 @@
 	const criticalImageScanButton = document.querySelector('[data-baocache-scan-critical-images]');
 	const criticalImageApplyButtons = document.querySelectorAll('[data-baocache-apply-critical-image]');
 	const criticalImageRollbackButton = document.querySelector('[data-baocache-rollback-critical-image]');
+	const resourceHintScanButton = document.querySelector('[data-baocache-scan-resource-hints]');
+	const resourceHintApplyButton = document.querySelector('[data-baocache-apply-resource-hints]');
+	const resourceHintRollbackButton = document.querySelector('[data-baocache-rollback-resource-hints]');
+	const resourceHintResult = document.querySelector('[data-baocache-resource-hints-result]');
 	const retentionKeep = document.querySelector('[data-baocache-retention-keep]');
 	const retentionHistory = document.querySelector('[data-baocache-retention-history]');
 	const retentionRemove = document.querySelector('[data-baocache-retention-remove]');
@@ -92,9 +96,6 @@
 	const databaseRepairButton = document.querySelector('[data-baocache-database-repair]');
 	const databaseCleanButton = document.querySelector('[data-baocache-database-clean]');
 	const databaseResult = document.querySelector('[data-baocache-database-result]');
-	const resourceHintApplyButton = document.querySelector('[data-baocache-apply-resource-hints]');
-	const resourceHintRollbackButton = document.querySelector('[data-baocache-rollback-resource-hints]');
-	const resourceHintResult = document.querySelector('[data-baocache-resource-hints-result]');
 	let toastTimer;
 
 	const setButtonLabel = (button, label) => {
@@ -128,6 +129,12 @@
 		const duration = options.duration ?? (options.action ? 8000 : 3200);
 		if (duration > 0) toastTimer = window.setTimeout(() => toast.remove(), duration);
 	};
+
+	const serverFeedback = document.querySelector('[data-baocache-server-feedback]');
+	if (serverFeedback) {
+		showToast(serverFeedback.textContent.trim(), { error: serverFeedback.dataset.baocacheServerFeedback === 'error' });
+		serverFeedback.remove();
+	}
 
 	const request = async (data, fallbackMessage) => {
 		const response = await fetch(BaoCacheAdmin.ajaxUrl, {
@@ -248,39 +255,6 @@
 	databaseCheckButton?.addEventListener('click', () => runDatabaseAction(databaseCheckButton, 'baocache_database_check', BaoCacheAdmin.databaseCheckNonce, BaoCacheAdmin.databaseCheckError));
 	databaseRepairButton?.addEventListener('click', () => runDatabaseAction(databaseRepairButton, 'baocache_database_repair', BaoCacheAdmin.databaseRepairNonce, BaoCacheAdmin.databaseRepairError, 'BaoCache chỉ tạo option/schema marker bị thiếu và xác minh cron do BaoCache sở hữu. Tiếp tục?'));
 	databaseCleanButton?.addEventListener('click', () => runDatabaseAction(databaseCleanButton, 'baocache_database_clean_runtime', BaoCacheAdmin.databaseCleanNonce, BaoCacheAdmin.databaseCleanError, 'Dọn Warm Queue, lock, transient, inventory tạm và cron runtime của BaoCache? Cấu hình sẽ được giữ.'));
-
-	resourceHintApplyButton?.addEventListener('click', async () => {
-		const ids = [...document.querySelectorAll('[data-baocache-resource-hint-choice]:checked')].map((input) => input.value);
-		if (!ids.length) {
-			showToast('Hãy chọn ít nhất một origin candidate.', { error: true });
-			return;
-		}
-		if (!window.confirm('Áp dụng tối đa 3 origin hint đã chọn? BaoCache không thêm preload URL.')) return;
-		resourceHintApplyButton.disabled = true;
-		try {
-			const data = await request({ action: 'baocache_apply_resource_hints', nonce: BaoCacheAdmin.resourceHintApplyNonce, ids }, BaoCacheAdmin.resourceHintApplyError);
-			if (resourceHintResult) resourceHintResult.textContent = data.message || 'Đã áp dụng.';
-			showToast(data.message || 'Đã áp dụng resource hints.');
-			window.setTimeout(() => window.location.reload(), 700);
-		} catch (error) {
-			showToast(error.message || BaoCacheAdmin.resourceHintApplyError, { error: true, duration: 5500 });
-		} finally {
-			resourceHintApplyButton.disabled = false;
-		}
-	});
-
-	resourceHintRollbackButton?.addEventListener('click', async () => {
-		if (!window.confirm('Rollback origin hints về cấu hình trước lần apply gần nhất?')) return;
-		resourceHintRollbackButton.disabled = true;
-		try {
-			const data = await request({ action: 'baocache_rollback_resource_hints', nonce: BaoCacheAdmin.resourceHintRollbackNonce }, BaoCacheAdmin.resourceHintRollbackError);
-			showToast(data.message || 'Đã rollback resource hints.');
-			window.setTimeout(() => window.location.reload(), 700);
-		} catch (error) {
-			showToast(error.message || BaoCacheAdmin.resourceHintRollbackError, { error: true, duration: 5500 });
-			resourceHintRollbackButton.disabled = false;
-		}
-	});
 
 	const detectAnalyticsId = () => {
 		const id = (analyticsIdInput?.value || '').trim().toUpperCase();
@@ -791,6 +765,43 @@
 				criticalImageRollbackButton.disabled = false;
 				setButtonLabel(criticalImageRollbackButton, 'Rollback');
 			}
+		});
+	}
+
+	if (resourceHintScanButton && window.BaoCacheAdmin) {
+		resourceHintScanButton.addEventListener('click', async () => {
+			resourceHintScanButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_scan_resource_hints', nonce: BaoCacheAdmin.resourceHintScanNonce }, 'Không thể tạo recommendation Resource Hints.');
+				if (resourceHintResult) resourceHintResult.textContent = `${data.count} candidate · fingerprint ${String(data.fingerprint).slice(0, 12)}. Tải lại trang để apply.`;
+				showToast('Đã tạo recommendation Resource & Font Hints.');
+			} catch (error) {
+				showToast(error.message || 'Không thể tạo recommendation Resource Hints.', { error: true });
+			} finally { resourceHintScanButton.disabled = false; }
+		});
+	}
+
+	if (resourceHintApplyButton && window.BaoCacheAdmin) {
+		resourceHintApplyButton.addEventListener('click', async () => {
+			resourceHintApplyButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_apply_resource_hints', nonce: BaoCacheAdmin.resourceHintApplyNonce, fingerprint: resourceHintApplyButton.dataset.fingerprint || '' }, 'Không thể áp dụng Resource Hints.');
+				if (resourceHintResult) resourceHintResult.textContent = data.message || 'Đã apply.';
+				showToast(data.message || 'Đã áp dụng Resource Hints.');
+			} catch (error) { showToast(error.message || 'Không thể áp dụng Resource Hints.', { error: true }); }
+			finally { resourceHintApplyButton.disabled = false; }
+		});
+	}
+
+	if (resourceHintRollbackButton && window.BaoCacheAdmin) {
+		resourceHintRollbackButton.addEventListener('click', async () => {
+			resourceHintRollbackButton.disabled = true;
+			try {
+				const data = await request({ action: 'baocache_rollback_resource_hints', nonce: BaoCacheAdmin.resourceHintRollbackNonce }, 'Không thể rollback Resource Hints.');
+				if (resourceHintResult) resourceHintResult.textContent = data.message || 'Đã rollback.';
+				showToast(data.message || 'Đã rollback Resource Hints.');
+			} catch (error) { showToast(error.message || 'Không thể rollback Resource Hints.', { error: true }); }
+			finally { resourceHintRollbackButton.disabled = false; }
 		});
 	}
 

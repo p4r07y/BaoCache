@@ -45,7 +45,12 @@ No combined “95/100 performance score” will be shown. No HIT ratio, LCP, TTF
 Redis latency or warm queue count will be shown until BaoCache collects it from a
 verified source.
 
-## Roadmap status — beta75
+## Roadmap status — beta78
+
+This release is a functional beta hardening release. The release gate is
+evidence-based: syntax and Compose validation are automated; staging acceptance
+and browser-level WordPress functional tests remain open until they are run on
+the target deployment.
 
 | Trạng thái | Phạm vi | Thống kê |
 | --- | --- | --- |
@@ -63,11 +68,32 @@ verified source.
 | Đã triển khai | beta61 — CSP Manager & Analytics Migration Checklist: CSP Report-Only/Enforce tĩnh, source controls, auto-origins theo integration và acknowledgement audit-safe cho duplicate tags | **1 mốc** |
 | Đã triển khai | beta62 — CSP Violation Evidence & Policy Diff: báo cáo tổng hợp opt-in, retention 30 ngày, fingerprint directive và clear action; không tự promote Enforce | **1 mốc** |
 | Đã triển khai | beta63 — Evidence-based CSP Source Recommendations: chỉ đề xuất HTTPS origin có Report-Only evidence lặp lại; áp dụng/bỏ qua là thao tác quản trị rõ ràng, không tự thêm source hay chuyển Enforce | **1 mốc** |
-| Đã hoàn thiện | Core engine và guardrails: snapshot/diff/gate/canary/rollback, CSP Report-Only workflow, header/cache/runtime evidence | **~95% core / ~98% reliability** |
+| Đã triển khai | Core engine và guardrails: snapshot/diff/gate/canary/rollback, CSP Report-Only workflow, header/cache/runtime evidence | Automated syntax/Compose checks PASS; staging acceptance is open |
 | Ưu tiên kế tiếp | Tự động phát hiện, recommendation có thể áp dụng, và UX thương mại theo evidence | **8 nhóm giá trị trực tiếp** |
 | Stable candidate | Cần staging acceptance thật, rollback thực tế, multi-page scope và kiểm thử install sạch | **~85–90% sẵn sàng kiến trúc** |
 
-**Tổng mốc beta đã triển khai: 35.**
+**Tổng mốc beta đã triển khai: 37, gồm beta78 resource-hint automation.**
+
+### Release control — beta78
+
+- **Source of truth:** plugin header, `BAOCACHE_VERSION`, readme Stable tag,
+  roadmap status and committed `wordpress/plugins/baocache.zip` must agree.
+- **Release gate:** version consistency, absence of nested Git repositories and
+  ZIP/source parity must be checked before publishing the artifact.
+- **Current state:** beta78 is a functional beta hardening release. Staging
+  acceptance, browser functional tests and rollback evidence remain open.
+
+### Deployment roadmap — next milestone beta79
+
+| Milestone | Status | Implementation boundary | Required evidence |
+| --- | --- | --- | --- |
+| beta78 — Automatic Resource & Font Hints | Delivered in beta | Derive bounded cross-origin origin/font recommendations from observed Asset Inventory evidence; cap hints; never blind-preload | Evidence fingerprint, recommendation diff, apply/rollback and cache invalidation implemented; staging probe remains open |
+| beta79 — Third-party Optimizer | Planned | Handle/dependency-aware classification and delay/consent/context rules | Browser compatibility matrix and rollback |
+| Stable RC | Blocked by acceptance | Clean install, ZIP/source parity, multisite statement, Site Overrides import/export | Staging acceptance report with PASS/FAIL per gate |
+
+No milestone is considered delivered when only UI or source code exists; it
+must also pass the stated evidence gate and be represented in the committed
+ZIP artifact.
 
 Các tỷ lệ là đánh giá phạm vi sản phẩm, không phải PageSpeed, health score hay
 phần trăm hoàn thành tự động. Stable vẫn yêu cầu QA thật trên staging và ít nhất
@@ -101,7 +127,7 @@ infrastructure rather than a feature stream.
 | --- | --- | --- |
 | **beta77 — Automatic Critical Images (delivered)** | Ranks same-site front-page image candidates from bounded DOM evidence and can safely apply `fetchpriority`, eager loading and preload. | Confidence is not an LCP claim; raw HTML is not stored; apply must pass a public post-change probe or is rolled back immediately. |
 | **beta77.1 — Data Retention & BaoCache Database Health (delivered)** | Keeps configuration by default across reinstall, provides explicit full removal, self-checks owned schema/config/cron, and reports autoload size read-only. | Runtime is always disposable; exact cleanup registry only; no wildcard option deletion, no `DROP TABLE`, and no WordPress/third-party repair. |
-| **beta78 — Automatic Resource & Font Hints (delivered)** | Evidence-driven origin recommendations with deduplication, bounded apply and rollback. | Exact preload/font-display changes require separate asset/CSS evidence; no blind preload. |
+| **beta78 — Automatic Resource & Font Hints (delivered)** | Recommend bounded preconnect and font preload hints from observed Asset Inventory evidence. | Validate the same resource fingerprint; cap hints; apply/rollback is explicit; no blind preload. |
 | **beta79 — Third-party Optimizer** | Classify third-party scripts by origin, cost and page context; offer delay/consent/context rules. | Handle/dependency-aware only; preview, staging QA and rollback required. |
 | **beta80 — Commerce Optimizer** | Generic cart/checkout detection plus optional WooCommerce metadata for fragment, asset and cache-bypass recommendations. | Checkout/authenticated routes are protected by default; no adapter-only core logic. |
 | **beta81 — Theme & Builder Adapters** | Optional Blocksy, Elementor and Bricks metadata/constraints for clearer recommendations. | Core uses observed handles/DOM; adapters add labels and exclusions only. |
@@ -502,19 +528,9 @@ statement.
   public probe must verify the image, preload and priority output; otherwise
   BaoCache immediately restores the prior configuration. Manual rollback is
   blocked when settings changed after apply.
-- **Delivered (beta78):** Automatic Resource & Font Hints analyzes the latest
-  administrator opt-in Resource Timing sample, fingerprints bounded origin
-  evidence, deduplicates existing hints and caps recommendations. Operators can
-  explicitly apply up to three safe preconnect/DNS-prefetch origins; the action
-  stores before/after state and supports stale-guarded rollback. Exact preload
-  URLs, font-display changes and LCP claims remain out of scope without asset or
-  CSS evidence.
-
-## P2 — Commercial optimization engine
-
-- **Next:** beta79 — Automatic Font Optimization, only after exact font asset
-  evidence is available. It must support preview, snapshot, post-change probe
-  and rollback; never preload from an origin-only timing sample.
+- **Next:** beta79 — Third-party Optimizer, using observed handles and
+  asset fingerprints to recommend bounded, deduplicated hints without blind
+  preload.
 
 ## P1 — Browser timing sample
 
