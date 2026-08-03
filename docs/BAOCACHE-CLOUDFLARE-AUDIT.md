@@ -1,9 +1,9 @@
-# BaoCache Cloudflare read-only audit
+# BaoCache Cloudflare integration
 
-BaoCache can verify an environment-provided Cloudflare API token and read one
-Zone record. It is an optional diagnostic: it is disabled by default and it does
-not make Cloudflare cache HTML, alter a Cache Rule, purge cache, or manage DNS,
-WAF, SSL, Workers or APO.
+BaoCache can verify an environment-provided audit token, read one Zone and count
+Cache Rules without returning rule content. Exact URL purge is a separate,
+disabled-by-default control with its own token. BaoCache never alters Cache
+Rules, DNS, WAF, SSL, Workers or APO.
 
 ## Configure in Coolify
 
@@ -14,15 +14,26 @@ Add these **runtime** variables to the Docker Compose resource, then redeploy:
 | `BAOCACHE_CLOUDFLARE_AUDIT_ENABLED` | `true` | Normal |
 | `BAOCACHE_CLOUDFLARE_ZONE_ID` | The exact 32-character Zone ID | Normal |
 | `BAOCACHE_CLOUDFLARE_API_TOKEN` | Scoped Cloudflare API token | **Secret** |
+| `BAOCACHE_CLOUDFLARE_PURGE_ENABLED` | `false` by default | Normal |
+| `BAOCACHE_CLOUDFLARE_PURGE_API_TOKEN` | Separate Cache Purge token | **Secret** |
 
 The token is read only at audit time. It is never copied into a WordPress option,
 shown in wp-admin, included in BaoCache JSON export, or written to the BaoCache
 activity log. Do not add it to Git, `.env.example`, `wp-config.php` or a
 Docker build argument.
 
-Create a token scoped to the one website Zone with this minimum permission:
+Create the audit token scoped to the one website Zone with these minimum permissions:
 
 - `Zone` → `Zone` → `Read`
+- `Zone` → `Zone Rulesets` → `Read`
+
+If exact URL purge is needed, create a separate token for the same Zone with:
+
+- `Zone` → `Cache Purge`
+
+Set `BAOCACHE_CLOUDFLARE_PURGE_ENABLED=true` only after checking the audit in
+staging. BaoCache accepts a single same-site public URL and never exposes purge
+all, tag, host or prefix controls.
 
 BaoCache calls only Cloudflare's token verification endpoint and the Zone details
 endpoint. The exact permission catalog and Zone endpoint are documented by
@@ -48,6 +59,6 @@ HTML was not edge-cached; it does not indicate a failing Cloudflare connection.
 - **Zone failed:** the token is valid but cannot read the supplied Zone. Check
   the 32-character Zone ID and the token's one-Zone `Zone → Zone → Read` scope.
 
-No Cloudflare cache-purge permission is required by this release. If a future
-Cloudflare purge capability is approved, it will be a separate explicit module
-with a separate least-privilege secret and exact-URL-only behaviour.
+No Cloudflare cache-purge permission is required for audit-only use. The exact
+URL purge control remains unavailable unless its separate secret and flag are
+both present.

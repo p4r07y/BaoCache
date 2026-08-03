@@ -18,6 +18,7 @@ final class BaoCache_Cloudflare {
 		$has_token = '' !== self::token();
 		$ready = $enabled && '' !== $zone_id && $has_token;
 		$purge_enabled = filter_var( getenv( 'BAOCACHE_CLOUDFLARE_PURGE_ENABLED' ) ?: 'false', FILTER_VALIDATE_BOOLEAN );
+		$has_purge_token = '' !== self::purge_token();
 		$missing = array();
 		if ( ! $enabled ) $missing[] = 'BAOCACHE_CLOUDFLARE_AUDIT_ENABLED=true';
 		if ( '' === $zone_id ) $missing[] = 'BAOCACHE_CLOUDFLARE_ZONE_ID';
@@ -27,8 +28,12 @@ final class BaoCache_Cloudflare {
 			'enabled' => $enabled,
 			'configured' => $ready,
 			'missing' => $missing,
-			'mode' => $ready && $purge_enabled ? 'exact-url-purge' : 'read-only',
-			'purge_enabled' => $ready && $purge_enabled,
+			'mode' => $ready && $purge_enabled && $has_purge_token ? 'exact-url-purge' : 'read-only',
+			'purge_enabled' => $ready && $purge_enabled && $has_purge_token,
+			'purge_missing' => array_values( array_filter( array(
+				$purge_enabled ? '' : 'BAOCACHE_CLOUDFLARE_PURGE_ENABLED=true',
+				$has_purge_token ? '' : 'BAOCACHE_CLOUDFLARE_PURGE_API_TOKEN',
+			) ) ),
 		);
 	}
 
@@ -86,7 +91,7 @@ final class BaoCache_Cloudflare {
 		$scheme = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) );
 		$home_host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
 		if ( '' === $url || $host !== $home_host || ! in_array( $scheme, array( 'http', 'https' ), true ) || false !== strpos( $url, '#' ) ) return new WP_Error( 'invalid_cloudflare_purge_url', __( 'Chỉ được purge một URL công khai cùng domain, không fragment.', 'baocache' ) );
-		$response = self::post( '/zones/' . rawurlencode( self::zone_id() ) . '/purge_cache', array( 'files' => array( $url ) ) );
+		$response = self::post( '/zones/' . rawurlencode( self::zone_id() ) . '/purge_cache', array( 'files' => array( $url ) ), self::purge_token() );
 		if ( ! $response['success'] ) return new WP_Error( 'cloudflare_purge_failed', __( 'Cloudflare không chấp nhận purge URL. Kiểm tra quyền Cache Purge và URL.', 'baocache' ) );
 		return array( 'purged' => true, 'request_id' => sanitize_key( (string) ( $response['result']['id'] ?? '' ) ) );
 	}
@@ -95,16 +100,16 @@ final class BaoCache_Cloudflare {
 		return self::request( 'GET', $path );
 	}
 
-	private static function post( string $path, array $body ): array {
-		return self::request( 'POST', $path, $body );
+	private static function post( string $path, array $body, ?string $token = null ): array {
+		return self::request( 'POST', $path, $body, $token );
 	}
 
-	private static function request( string $method, string $path, ?array $body = null ): array {
+	private static function request( string $method, string $path, ?array $body = null, ?string $token = null ): array {
 		$args = array(
 			'method' => $method,
 			'timeout' => 10,
 			'redirection' => 0,
-			'headers' => array( 'Authorization' => 'Bearer ' . self::token(), 'Accept' => 'application/json' ),
+			'headers' => array( 'Authorization' => 'Bearer ' . ( $token ?? self::token() ), 'Accept' => 'application/json' ),
 		);
 		if ( null !== $body ) {
 			$args['headers']['Content-Type'] = 'application/json';
@@ -140,5 +145,10 @@ final class BaoCache_Cloudflare {
 		if ( false === $size || $size < 1 || $size > 8192 ) return '';
 		$value = file_get_contents( $path );
 		return is_string( $value ) ? trim( $value ) : '';
+	}
+
+	/** Kept separate from the audit token so Cache Purge is never granted to audit. */
+	private static function purge_token(): string {
+		return trim( (string) getenv( 'BAOCACHE_CLOUDFLARE_PURGE_API_TOKEN' ) );
 	}
 }
