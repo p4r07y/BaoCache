@@ -1,0 +1,233 @@
+/**
+ * Respectful Progressive Web App installation prompt.
+ *
+ * @package Power_Schedule_Manager
+ */
+
+(function () {
+	'use strict';
+
+	const config = window.PowerScheduleManagerPWA || {};
+
+	if (!config.enabled) {
+		return;
+	}
+
+	const storage = {
+		get(key) {
+			try {
+				return window.localStorage.getItem(key);
+			} catch (error) {
+				return null;
+			}
+		},
+		set(key, value) {
+			try {
+				window.localStorage.setItem(key, value);
+			} catch (error) {
+				// Private browsing or storage policy may block persistence.
+			}
+		},
+	};
+	const keys = {
+		visits: 'psm_pwa_visits_v1',
+		session: 'psm_pwa_session_v1',
+		snooze: 'psm_pwa_snooze_until_v1',
+		installed: 'psm_pwa_installed_v1',
+	};
+	let installEvent = null;
+	let domReady = false;
+
+	function isStandalone() {
+		return (
+			window.matchMedia('(display-mode: standalone)').matches ||
+			window.navigator.standalone === true
+		);
+	}
+
+	function isIOS() {
+		return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+	}
+
+	function recordVisit() {
+		try {
+			if (window.sessionStorage.getItem(keys.session)) {
+				return Number.parseInt(storage.get(keys.visits) || '0', 10);
+			}
+
+			window.sessionStorage.setItem(keys.session, '1');
+		} catch (error) {
+			// Continue with a conservative persistent count.
+		}
+
+		const visits = Math.max(
+			0,
+			Number.parseInt(storage.get(keys.visits) || '0', 10) || 0
+		) + 1;
+		storage.set(keys.visits, String(visits));
+
+		return visits;
+	}
+
+	function canShow(visits) {
+		if (
+			!config.promptEnabled ||
+			isStandalone() ||
+			storage.get(keys.installed) === '1'
+		) {
+			return false;
+		}
+
+		const threshold = Math.max(
+			2,
+			Number.parseInt(config.visitThreshold || 3, 10) || 3
+		);
+		const snoozeUntil = Number.parseInt(
+			storage.get(keys.snooze) || '0',
+			10
+		);
+
+		return visits >= threshold && Date.now() >= snoozeUntil;
+	}
+
+	function snoozePrompt(prompt) {
+		const days = Math.max(
+			1,
+			Number.parseInt(config.cooldownDays || 30, 10) || 30
+		);
+		storage.set(
+			keys.snooze,
+			String(Date.now() + days * 24 * 60 * 60 * 1000)
+		);
+		prompt.hidden = true;
+	}
+
+	function showPrompt(visits) {
+		const prompt = document.querySelector('[data-psm-pwa-prompt]');
+
+		if (!(prompt instanceof HTMLElement) || !canShow(visits)) {
+			return;
+		}
+
+		const installButton = prompt.querySelector(
+			'[data-psm-pwa-install]'
+		);
+		const iosHelp = prompt.querySelector('[data-psm-pwa-ios-help]');
+		const ios = isIOS();
+
+		if (iosHelp instanceof HTMLElement) {
+			iosHelp.hidden = !ios;
+		}
+
+		if (installButton instanceof HTMLButtonElement) {
+			installButton.hidden = !ios && installEvent === null;
+		}
+
+		if (!ios && installEvent === null) {
+			return;
+		}
+
+		prompt.hidden = false;
+
+		prompt
+			.querySelectorAll('[data-psm-pwa-dismiss]')
+			.forEach(function (button) {
+				button.addEventListener('click', function () {
+					snoozePrompt(prompt);
+				});
+			});
+
+		if (installButton instanceof HTMLButtonElement) {
+			installButton.addEventListener('click', async function () {
+				if (ios || installEvent === null) {
+					if (iosHelp instanceof HTMLElement) {
+						iosHelp.hidden = false;
+					}
+					return;
+				}
+
+				installButton.disabled = true;
+				await installEvent.prompt();
+				const choice = await installEvent.userChoice;
+
+				if (choice.outcome === 'accepted') {
+					storage.set(keys.installed, '1');
+					prompt.hidden = true;
+				} else {
+					snoozePrompt(prompt);
+				}
+
+				installEvent = null;
+				installButton.disabled = false;
+			});
+		}
+	}
+
+	async function registerWorker() {
+		if (
+			!config.workerEnabled ||
+			!('serviceWorker' in window.navigator) ||
+			!config.workerUrl
+		) {
+			return;
+		}
+
+		try {
+			const existing = await window.navigator.serviceWorker
+				.getRegistration(config.workerScope || '/');
+			const existingWorker = existing
+				? existing.active || existing.waiting || existing.installing
+				: null;
+
+			if (
+				existingWorker &&
+				!existingWorker.scriptURL.includes('psm_pwa_worker=1') &&
+				!existingWorker.scriptURL.includes('psm-service-worker.js') &&
+				!existingWorker.scriptURL.includes('psm-pwa-worker')
+			) {
+				return;
+			}
+
+			await window.navigator.serviceWorker.register(
+				config.workerUrl,
+				{scope: config.workerScope || '/'}
+			);
+		} catch (error) {
+			// Installation UI remains hidden if the browser rejects setup.
+		}
+	}
+
+	const visits = recordVisit();
+
+	window.addEventListener('beforeinstallprompt', function (event) {
+		event.preventDefault();
+		installEvent = event;
+
+		if (domReady) {
+			window.setTimeout(function () {
+				showPrompt(visits);
+			}, 250);
+		}
+	});
+	window.addEventListener('appinstalled', function () {
+		storage.set(keys.installed, '1');
+		const prompt = document.querySelector('[data-psm-pwa-prompt]');
+		if (prompt instanceof HTMLElement) {
+			prompt.hidden = true;
+		}
+	});
+
+	document.addEventListener('DOMContentLoaded', function () {
+		domReady = true;
+		registerWorker();
+		window.setTimeout(
+			function () {
+				showPrompt(visits);
+			},
+			Math.max(
+				2000,
+				Number.parseInt(config.delayMs || 8000, 10) || 8000
+			)
+		);
+	});
+}());

@@ -1,0 +1,248 @@
+/* Compact homepage tables and utility result layouts. */
+.psm-home-power-zone{display:grid;gap:clamp(14px,2vw,22px)}
+.psm-home-power-zone>header{margin-bottom:0}
+.psm-home-power-zone .psm-area-links{padding:clamp(14px,2vw,20px)}
+.psm-home-power-zone .psm-area-links__heading{margin-bottom:12px}
+.psm-home-power-zone .psm-area-links__heading-copy p{margin-top:4px}
+.psm-home-hub__section--schedule_summary .psm-widget{margin:0}
+.psm-home-hub__section--schedule_summary .psm-widget__header{padding-block:14px}
+.psm-home-hub__section--schedule_summary .psm-table-wrap{margin:0}
+.psm-keno-table,.psm-dientoan123-history table{width:100%;border-collapse:collapse;background:#fff}
+.psm-keno-table caption,.psm-dientoan123-history caption{padding:16px 18px;color:#0f172a;font-size:1.1rem;font-weight:850;text-align:left}
+.psm-keno-table th,.psm-keno-table td,.psm-dientoan123-history th,.psm-dientoan123-history td{padding:14px;border:1px solid #e2e8f0;vertical-align:middle;text-align:left}
+.psm-keno-table thead th,.psm-dientoan123-history thead th{background:#f8fafc;color:#334155;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+.psm-keno-table tbody tr.is-latest,.psm-dientoan123-history tbody tr.is-latest{background:#fffbeb}
+.psm-keno-table tbody th strong,.psm-dientoan123-history tbody th strong{display:block;color:#075985}
+.psm-keno-table time,.psm-dientoan123-history time{display:block;margin-top:4px;color:#64748b;font-size:.78rem;font-weight:500}
+.psm-keno-table__balls{display:grid;grid-template-columns:repeat(10,minmax(28px,1fr));gap:6px}
+.psm-keno-table__balls span{display:grid;min-width:28px;aspect-ratio:1;place-items:center;border:2px solid #e11d48;border-radius:50%;background:#fff;color:#0f172a;font-size:.78rem;font-weight:850}
+.psm-keno-table__stats{display:grid;grid-template-columns:repeat(2,minmax(64px,1fr));gap:6px}
+.psm-keno-table__stats span{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:8px;font-size:.74rem;font-weight:750}
+.psm-keno-table__stats .is-even{background:#dbeafe;color:#1d4ed8}
+.psm-keno-table__stats .is-odd{background:#fce7f3;color:#be185d}
+.psm-keno-table__stats .is-large{background:#dcfce7;color:#15803d}
+.psm-keno-table__stats .is-small{background:#fef3c7;color:#a16207}
+.psm-dientoan123-number{display:block;color:#dc2626;font-size:clamp(1.25rem,2vw,1.75rem);font-variant-numeric:tabular-nums;text-align:center}
+
+/* Keno: keep every two-digit result inside a true circle. */
+.psm-lottery--keno,.psm-lottery--keno_history,.psm-lottery--dientoan{margin-block:clamp(12px,2vw,24px)}
+.psm-keno-history{overflow-x:auto;border:1px solid #e2e8f0;border-radius:18px;background:#fff;box-shadow:0 12px 32px rgb(15 23 42 / 7%)}
+.psm-keno-table{min-width:860px;table-layout:fixed}
+.psm-keno-table th:first-child{width:150px}
+.psm-keno-table th:nth-child(2){width:auto}
+.psm-keno-table th:nth-child(3){width:220px}
+.psm-keno-table__balls{display:grid;grid-template-columns:repeat(10,38px);justify-content:center;gap:8px 10px;min-width:470px}
+.psm-keno-table__balls span{box-sizing:border-box;display:grid!important;width:38px;min-width:38px;height:38px;min-height:38px;aspect-ratio:auto;overflow:hidden;padding:0!important;place-items:center!important;align-items:center!important;justify-items:center!important;text-align:center!important;text-indent:0!important;white-space:nowrap;line-height:1!important;font-variant-numeric:tabular-nums}
+.psm-keno-table__stats span{min-width:0;white-space:nowrap}
+.psm-keno-table caption{padding:12px 16px!important;font-size:1rem!important;line-height:1.25!important}
+.psm-keno-table th,.psm-keno-table td{padding:10px 12px}
+.psm-keno-table__stats{grid-template-columns:repeat(2,minmax(82px,1fr));gap:5px}
+.psm-keno-table__stats span{padding:5px 7px;font-size:.7rem;line-height:1.2}
+
+/* Computerized lottery: one complete card per product, aligned like Max 3D. */
+.psm-lottery--dientoan>.psm-lottery__draw-list{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:18px}
+.psm-lottery--dientoan .psm-lottery-card{display:flex;min-height:310px;flex-direction:column;border-top:5px solid #f59e0b}
+.psm-lottery--dientoan .psm-lottery-card>header{min-height:88px;background:#fffbeb;color:#92400e}
+.psm-lottery--dientoan .psm-lottery-card--dientoan123{border-top-color:#ef4444}
+.psm-lottery--dientoan .psm-lottery-card--dientoan123>header{background:#fff1f2;color:#b91c1c}
+.psm-lottery--dientoan .psm-lottery-card--thantai{border-top-color:#a855f7}
+.psm-lottery--dientoan .psm-lottery-card--thantai>header{background:#faf5ff;color:#7e22ce}
+.psm-lottery--dientoan .psm-lottery-card__header-meta>strong,.psm-lottery--dientoan .psm-lottery-card__state{border-color:currentColor;background:rgb(255 255 255 / 65%);color:inherit}
+.psm-lottery--dientoan :is(.psm-dientoan-123,.psm-dientoan-6x36,.psm-thantai){display:flex;min-height:150px;flex:1;align-items:center;justify-content:center}
+.psm-lottery--dientoan .psm-dientoan-note{margin:auto 18px 18px;padding-top:12px;border-top:1px solid #e2e8f0;text-align:center}
+
+/* Dedicated product pages start close to their hero, matching Max 3D. */
+body:has(.psm-page-hero--lottery_keno) .entry-content,
+body:has(.psm-page-hero--lottery_dientoan) .entry-content{padding-top:0}
+.psm-market-overview__body>.psm-data-section-header,.psm-lottery-archive>.psm-data-section-header{padding-bottom:12px}
+.psm-market-overview__body>.psm-data-section-header nav{display:none!important}
+body:has(.psm-page-hero--weather) .psm-weather__toolbar{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}
+body:has(.psm-page-hero--lottery_lookup) .psm-lottery-archive>.psm-data-section-header{display:none!important}
+body:has(.psm-page-hero--lottery_lookup) .psm-lottery-archive{padding-top:clamp(18px,2.5vw,30px)!important}
+@media(max-width:782px){
+.psm-home-power-zone{gap:12px}
+.psm-home-power-zone>header span{font-size:.92rem;line-height:1.45}
+.psm-home-power-zone .psm-area-links__grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.psm-keno-table,.psm-keno-table tbody,.psm-keno-table tr,.psm-keno-table td,.psm-keno-table th,.psm-dientoan123-history table,.psm-dientoan123-history tbody,.psm-dientoan123-history tr,.psm-dientoan123-history td,.psm-dientoan123-history th{display:block}
+.psm-keno-table thead,.psm-dientoan123-history thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.psm-keno-table caption,.psm-dientoan123-history caption{box-sizing:border-box;display:block;width:100%}
+.psm-keno-table tbody tr,.psm-dientoan123-history tbody tr{margin:10px;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.psm-keno-table th,.psm-keno-table td,.psm-dientoan123-history th,.psm-dientoan123-history td{border:0;border-bottom:1px solid #eef2f7}
+.psm-keno-table td:last-child,.psm-dientoan123-history td:last-child{border-bottom:0}
+.psm-keno-history{overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
+.psm-keno-table{min-width:0;table-layout:auto}
+.psm-keno-table__balls{grid-template-columns:repeat(5,36px);justify-content:start;min-width:0;gap:8px}
+.psm-keno-table__balls span{width:36px;min-width:36px;height:36px;min-height:36px}
+.psm-keno-table__stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.psm-keno-table__stats span{display:grid;justify-items:center;padding:7px 3px}
+.psm-dientoan123-history td{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:10px}
+.psm-dientoan123-history td:before{content:attr(data-label);color:#64748b;font-size:.75rem;font-weight:750}
+.psm-dientoan123-number{text-align:left}
+.psm-lottery--dientoan>.psm-lottery__draw-list{grid-template-columns:1fr;gap:14px}
+.psm-lottery--dientoan .psm-lottery-card{min-height:0}
+}
+
+@media(max-width:420px){
+.psm-keno-table__balls{grid-template-columns:repeat(5,34px);gap:7px 6px}
+.psm-keno-table__balls span{width:34px;min-width:34px;height:34px;min-height:34px;font-size:.74rem}
+.psm-keno-table__stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* 0.38.4.1: remove Blocksy's second constrained gutter around plugin pages. */
+html body .entry-content>:is(.wp-block-columns,.wp-block-group):has(.psm-home-hub,.psm-market-overview,.psm-lottery-overview,.psm-lottery,.psm-weather,.psm-participate,.psm-sponsor-page){box-sizing:border-box!important;width:100%!important;max-width:100%!important;margin-inline:0!important;padding-inline:0!important}
+html body .entry-content>:is(.wp-block-columns,.wp-block-group):has(.psm-home-hub,.psm-market-overview,.psm-lottery-overview,.psm-lottery,.psm-weather,.psm-participate,.psm-sponsor-page)>.wp-block-column{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;flex-basis:100%!important}
+
+/* The dedicated Điện toán page may contain three legacy product shortcodes. */
+html body:has(.psm-page-hero--lottery_dientoan) .entry-content .wp-block-column:has(>.psm-lottery--dientoan123):has(>.psm-lottery--dientoan6x36):has(>.psm-lottery--thantai){display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:18px!important}
+html body:has(.psm-page-hero--lottery_dientoan) .entry-content .wp-block-column:has(>.psm-lottery--dientoan123):has(>.psm-lottery--dientoan6x36):has(>.psm-lottery--thantai)>p:empty{display:none!important}
+html body:has(.psm-page-hero--lottery_dientoan) .entry-content .wp-block-column>:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai){display:flex!important;min-width:0!important;height:100%!important;margin:0!important}
+html body:has(.psm-page-hero--lottery_dientoan) .entry-content .wp-block-column>:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai)>*{width:100%!important}
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card{display:flex;height:100%;min-height:290px;flex-direction:column;overflow:hidden;border:1px solid #e2e8f0;border-block-start:5px solid #f59e0b;border-radius:18px;background:#fff;box-shadow:0 12px 32px rgb(15 23 42 / 8%)}
+.psm-lottery--dientoan123 .psm-lottery-empty-card{border-block-start-color:#ef4444}
+.psm-lottery--thantai .psm-lottery-empty-card{border-block-start-color:#a855f7}
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card .psm-lottery__masthead{min-height:82px;margin:0;border:0;border-radius:0;box-shadow:none}
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card .psm-lottery__masthead h2{color:inherit}
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card .psm-lottery-empty{min-height:190px;flex:1}
+.psm-lottery--dientoan123 .psm-lottery-empty-card .psm-lottery__masthead{background:linear-gradient(110deg,#fff1f2,#fff7f7);color:#b91c1c}
+.psm-lottery--dientoan6x36 .psm-lottery-empty-card .psm-lottery__masthead{background:linear-gradient(110deg,#fff8df,#fffbeb);color:#92400e}
+.psm-lottery--thantai .psm-lottery-empty-card .psm-lottery__masthead{background:linear-gradient(110deg,#faf5ff,#fdf8ff);color:#7e22ce}
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card .psm-lottery-empty{border-block-start:0}
+.psm-dientoan-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.psm-dientoan-pending-grid .psm-lottery-card{height:100%;margin:0}
+
+/* Lottery results use the same Blocksy shell as the hero/header. */
+html body:has(.psm-page-hero--lottery) .entry-content>:is(.wp-block-columns,.wp-block-group):has(.psm-lottery),
+html body:has([class*="psm-page-hero--lottery_"]) .entry-content>:is(.wp-block-columns,.wp-block-group):has(.psm-lottery){width:var(--psm-blocksy-shell,min(var(--theme-container-width,1290px),calc(100vw - 40px)))!important;max-width:100%!important;margin-inline:auto!important}
+html body:has(.psm-page-hero--lottery) .entry-content .wp-block-column,
+html body:has([class*="psm-page-hero--lottery_"]) .entry-content .wp-block-column{min-width:0!important}
+html body:has(.psm-page-hero--lottery) .entry-content .wp-block-column>.psm-lottery,
+html body:has([class*="psm-page-hero--lottery_"]) .entry-content .wp-block-column>.psm-lottery{width:100%!important;max-width:100%!important;margin-inline:0!important}
+
+/* The individual Điện toán shortcodes share the exact Max 3D card system. */
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card{display:flex;min-height:310px;flex-direction:column;overflow:hidden;border:1px solid #e2e8f0;border-block-start:4px solid #f4b400;border-radius:16px;background:#fff;box-shadow:0 10px 30px rgb(15 23 42 / 7%)}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card>header{min-height:82px;border-block-start:0;background:linear-gradient(110deg,#fff8df,#fffbeb);color:#92400e}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123) .psm-lottery-card--dientoan123{border-block-start-color:#ef4444}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123) .psm-lottery-card--dientoan123>header{background:linear-gradient(110deg,#fff1f2,#fff7f7);color:#b91c1c}
+:is(.psm-lottery--dientoan,.psm-lottery--thantai) .psm-lottery-card--thantai{border-block-start-color:#a855f7}
+:is(.psm-lottery--dientoan,.psm-lottery--thantai) .psm-lottery-card--thantai>header{background:linear-gradient(110deg,#faf5ff,#fdf8ff);color:#7e22ce}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card__header-meta>strong,
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card__state{border-color:currentColor;background:rgb(255 255 255 / 72%);color:inherit}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) :is(.psm-dientoan-123,.psm-dientoan-6x36,.psm-thantai){display:flex;min-height:150px;flex:1;align-items:center;justify-content:center}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-dientoan-note{margin:auto 18px 18px;padding-top:12px;border-top:1px solid #e2e8f0;text-align:center}
+
+/* Latest Keno draw is a single featured board; history remains one table. */
+.psm-keno-featured{overflow:hidden;border:1px solid #dbe4f0;border-block-start:4px solid #f4b400;border-radius:16px;background:#fff;box-shadow:0 10px 30px rgb(15 23 42 / 7%)}
+.psm-keno-featured>header{padding:18px clamp(18px,3vw,34px);background:linear-gradient(110deg,#fff8df,#fffbeb);text-align:center}
+.psm-keno-featured>header h2{margin:0;color:#101827;font-size:clamp(1.2rem,2.25vw,2rem);font-weight:900;line-height:1.2;text-wrap:balance}
+.psm-keno-featured>header h2::first-letter{color:inherit}
+.psm-keno-featured__draw-id{color:#e0001b;white-space:nowrap}
+.psm-keno-featured__balls{display:grid;grid-template-columns:repeat(10,clamp(44px,5vw,64px));justify-content:space-between;gap:16px clamp(8px,1.3vw,18px);padding:clamp(20px,3vw,34px)}
+.psm-keno-featured__balls span{box-sizing:border-box;display:grid;width:clamp(44px,5vw,64px);height:clamp(44px,5vw,64px);place-items:center;border:2px solid #e0001b;border-radius:50%;background:#fff;color:#111827;font-size:clamp(1rem,1.8vw,1.35rem);font-weight:900;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;box-shadow:0 3px 8px rgb(15 23 42 / 8%)}
+.psm-keno-featured__stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin:0;padding:0 clamp(20px,3vw,36px) clamp(22px,3vw,36px)}
+.psm-keno-featured__stats>div{display:flex;min-height:64px;align-items:center;justify-content:space-between;padding:10px 18px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 3px 8px rgb(15 23 42 / 6%)}
+.psm-keno-featured__stats dt{display:flex;align-items:center;gap:12px;color:#334155;font-weight:800}
+.psm-keno-featured__stats dt i{display:grid;width:36px;height:36px;place-items:center;border-radius:50%;background:#1726b8;color:#fff;font-style:normal;font-weight:900}
+.psm-keno-featured__stats .is-odd dt i{background:#3098da}
+.psm-keno-featured__stats .is-large dt i{background:#dc001d}
+.psm-keno-featured__stats .is-small dt i{background:#f59e0b}
+.psm-keno-featured__stats dd{margin:0;color:#111827;font-size:1.35rem;font-weight:900;font-variant-numeric:tabular-nums}
+
+/* One legal notice at the actual bottom of a lottery page. */
+.psm-lottery-disclaimer{box-sizing:border-box;width:var(--psm-blocksy-shell,min(var(--theme-container-width,1290px),calc(100vw - 40px)));max-width:100%;margin:clamp(30px,4vw,52px) auto 0;padding:clamp(18px,2.5vw,26px);border:1px solid #f3d98b;border-inline-start:5px solid #f4b400;border-radius:14px;background:#fffbeb;color:#713f12;box-shadow:0 8px 24px rgb(15 23 42 / 6%)}
+.psm-lottery-disclaimer h2{display:flex;align-items:center;gap:9px;margin:0 0 10px;color:#78350f;font-size:clamp(1.05rem,2vw,1.3rem);line-height:1.3}
+.psm-lottery-disclaimer p{margin:6px 0 0;color:#713f12;font-size:.94rem;line-height:1.65}
+
+/* Utility data starts immediately below the compact hero. */
+html body:has(.psm-page-hero--gold) .psm-market-overview__body,
+html body:has(.psm-page-hero--coffee) .psm-market-overview__body{padding-top:clamp(18px,2.2vw,28px)!important}
+html body:has(.psm-page-hero--gold) .psm-market-overview__body>.psm-data-section-header,
+html body:has(.psm-page-hero--coffee) .psm-market-overview__body>.psm-data-section-header{margin-top:0!important}
+
+/* Generated /khu-vuc pages share the exact Blocksy content shell. */
+html body .psm-taxonomy-area :is(.psm-area-introduction,.psm-area-filter,.psm-area-results,.psm-information,.psm-area-footer){box-sizing:border-box!important;width:var(--psm-blocksy-shell,min(calc(100% - 40px),var(--theme-normal-container-max-width,1290px)))!important;max-width:var(--theme-normal-container-max-width,1290px)!important;margin-inline:auto!important}
+html body .psm-taxonomy-area :is(.psm-area-filter,.psm-area-results,.psm-schedule,.psm-schedule-list,.psm-schedule__mobile,.psm-schedule__desktop,.psm-search){min-width:0!important;max-width:100%!important}
+html body .psm-taxonomy-area :is(.psm-table-wrap,.psm-schedule-table-wrap){box-sizing:border-box;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}
+html body .psm-taxonomy-area .psm-area-date-filter{width:100%;max-width:100%}
+
+@media(max-width:900px){
+html body:has(.psm-page-hero--lottery_dientoan) .entry-content .wp-block-column:has(>.psm-lottery--dientoan123):has(>.psm-lottery--dientoan6x36):has(>.psm-lottery--thantai),.psm-dientoan-pending-grid{grid-template-columns:1fr!important}
+.psm-keno-featured__balls{grid-template-columns:repeat(5,48px);justify-content:center}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card{min-height:0}
+}
+@media(max-width:520px){
+.psm-taxonomy-area .psm-area-date-filter{grid-template-columns:minmax(0,1fr)!important}
+.psm-taxonomy-area .psm-area-date-filter .psm-search__actions,.psm-taxonomy-area .psm-area-date-filter .psm-button{width:100%}
+.psm-keno-featured>header{padding:16px 12px}
+.psm-keno-featured>header h2{font-size:1.05rem}
+.psm-keno-featured__balls{grid-template-columns:repeat(5,40px);gap:10px 8px;padding:16px 12px}
+.psm-keno-featured__balls span{width:40px;height:40px;font-size:.9rem}
+.psm-keno-featured__stats{grid-template-columns:1fr;gap:8px;padding:0 12px 16px}
+.psm-keno-featured__stats>div{min-height:52px;padding:8px 12px}
+.psm-keno-featured__stats dt i{width:30px;height:30px}
+.psm-lottery-disclaimer{width:calc(100vw - 40px);padding:16px}
+}
+
+/* 0.38.4.2: one visual language for Keno and every Điện toán product. */
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card,
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card{border-color:#dbe4f0!important;border-block-start:5px solid #f4b400!important;border-radius:18px!important;background:#fff!important;box-shadow:0 14px 34px rgb(15 23 42 / 10%)!important}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card>header,
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card .psm-lottery__masthead{background:linear-gradient(112deg,#101827 0%,#1f2442 58%,#432b4e 100%)!important;color:#fff!important}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card>header :is(span,h3),
+:is(.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-empty-card .psm-lottery__masthead h2{color:#fff!important}
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card__header-meta>strong,
+:is(.psm-lottery--dientoan,.psm-lottery--dientoan123,.psm-lottery--dientoan6x36,.psm-lottery--thantai) .psm-lottery-card__state{border-color:rgb(255 255 255 / 25%)!important;background:rgb(255 255 255 / 10%)!important;color:#fff!important}
+.psm-dientoan-123{width:100%;gap:clamp(10px,2vw,22px);padding:clamp(22px,4vw,42px)!important}
+.psm-dientoan-123>div{box-sizing:border-box;display:grid!important;min-width:0;min-height:118px;flex:1;place-content:center;gap:8px;border:1px solid #e2e8f0;border-radius:18px;background:#f8fafc;text-align:center}
+.psm-dientoan-123>div small{color:#64748b;font-size:.76rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.psm-dientoan-123>div strong{display:grid;width:clamp(54px,6vw,72px);height:clamp(54px,6vw,72px);margin:auto;place-items:center;border-radius:50%;background:#dc2626;color:#fff!important;font-size:clamp(1.35rem,2.6vw,2rem)!important;font-variant-numeric:tabular-nums;box-shadow:0 8px 18px rgb(220 38 38 / 22%)}
+.psm-dientoan-123>div:nth-child(2) strong{border-radius:16px;background:#2563eb;box-shadow:0 8px 18px rgb(37 99 235 / 22%)}
+.psm-dientoan-123>div:nth-child(3) strong{width:clamp(70px,8vw,94px);border-radius:999px;background:#059669;box-shadow:0 8px 18px rgb(5 150 105 / 22%)}
+.psm-dientoan-6x36 strong{border:0!important;background:#f4b400!important;color:#fff!important;box-shadow:0 6px 14px rgb(244 180 0 / 24%)}
+.psm-thantai>div{background:linear-gradient(120deg,#dc001d,#ff7a00)!important;box-shadow:0 10px 22px rgb(220 0 29 / 20%)}
+
+.psm-keno-featured{border-color:#dbe4f0;border-block-start-color:#f4b400;background:#fff}
+.psm-keno-featured>header{background:linear-gradient(112deg,#101827 0%,#1f2442 58%,#432b4e 100%)}
+.psm-keno-featured>header h2{color:#fff}
+.psm-keno-featured__draw-id{color:#fbbf24}
+.psm-keno-table caption{background:linear-gradient(112deg,#101827,#342844);color:#fff}
+.psm-keno-table tbody tr.is-latest{background:#fff9e8}
+
+/* Gold/coffee data titles sit close to the hero without the repeated eyebrow. */
+html body:has(.psm-page-hero--gold) .psm-market-overview__body,
+html body:has(.psm-page-hero--coffee) .psm-market-overview__body{padding-top:clamp(20px,2.4vw,32px)!important}
+html body:has(.psm-page-hero--gold) .psm-market-overview__body>.psm-data-section-header,
+html body:has(.psm-page-hero--coffee) .psm-market-overview__body>.psm-data-section-header{margin:0 0 18px!important;padding:0!important}
+
+/* Realtime summary: informative without competing with the H1. */
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary{width:min(100%,310px)!important;max-width:310px!important;padding:4px 8px!important;border-radius:14px!important;box-shadow:0 10px 24px rgb(2 6 23 / 14%)!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl>div{min-width:0;min-height:62px;padding:8px 7px 8px 17px!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl>div+div{border-top:0!important;border-left:1px solid rgb(255 255 255 / 14%)!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl>div::before{top:15px!important;width:6px!important;height:6px!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dt{font-size:.62rem!important;letter-spacing:.08em!important;line-height:1.25!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dd{font-size:clamp(.94rem,1.1vw,1.04rem)!important;line-height:1.18!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary small{font-size:.63rem!important;line-height:1.3!important}
+html body [class*="psm-page-hero--lottery_"] .psm-page-hero__summary dl>div:first-child::before{background:#34d399!important;box-shadow:0 0 0 4px rgb(52 211 153 / 14%)!important}
+
+/* Leave one deliberate rhythm step between utility hero and first result. */
+html body:has([class*="psm-page-hero--lottery_"]) .entry-content>.psm-page-hero+*{margin-block-start:clamp(22px,2.6vw,36px)!important}
+html body:has([class*="psm-page-hero--lottery_"]) .entry-content>.wp-block-shortcode:has(>.psm-page-hero)+*{margin-block-start:clamp(22px,2.6vw,36px)!important}
+html body [class*="psm-page-hero--lottery_"]+:is(.psm-lottery,.wp-block-shortcode){margin-block-start:clamp(22px,2.6vw,36px)!important}
+
+/* Compact, readable two-item live summary on phones. */
+@media(max-width:782px){
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary{width:100%!important;max-width:none!important;padding:4px 8px!important;border-radius:13px!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl>div{min-width:0;min-height:58px;padding:7px 5px 7px 16px!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dl>div+div{border-top:0!important;border-left:1px solid rgb(255 255 255 / 14%)!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dt{font-size:.59rem!important;white-space:normal!important}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary dd{font-size:clamp(.86rem,4vw,.98rem)!important;overflow-wrap:anywhere}
+html body .psm-page-hero.psm-page-hero .psm-page-hero__summary small{font-size:.6rem!important;overflow-wrap:anywhere}
+html body:has([class*="psm-page-hero--lottery_"]) .entry-content>.psm-page-hero+*,html body:has([class*="psm-page-hero--lottery_"]) .entry-content>.wp-block-shortcode:has(>.psm-page-hero)+*{margin-block-start:18px!important}
+}
+@media(max-width:520px){
+.psm-dientoan-123{gap:7px;padding:18px 10px!important}
+.psm-dientoan-123>div{min-height:98px;border-radius:14px}
+.psm-dientoan-123>div strong{width:50px;height:50px;font-size:1.25rem!important}
+.psm-dientoan-123>div:nth-child(3) strong{width:64px}
+}

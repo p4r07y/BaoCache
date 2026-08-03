@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+	<title id="title">Cúp Điện Lâm Đồng</title>
+	<defs>
+		<linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0" stop-color="#1456d9"/>
+			<stop offset="1" stop-color="#087f9c"/>
+		</linearGradient>
+	</defs>
+	<rect width="512" height="512" rx="112" fill="url(#background)"/>
+	<path d="M291 57 137 288h100l-21 167 159-250H272l19-148Z" fill="#fff"/>
+</svg>
