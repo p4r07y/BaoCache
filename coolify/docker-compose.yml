@@ -1,0 +1,311 @@
+x-wordpress-environment: &wordpress-environment
+  WORDPRESS_DB_HOST: ${DB_HOST:?Set DB_HOST}
+  WORDPRESS_DB_NAME: ${DB_NAME:?Set DB_NAME}
+  WORDPRESS_DB_USER: ${DB_USER:?Set DB_USER}
+  WORDPRESS_DB_PASSWORD_FILE: /run/secrets/wordpress_db_password
+  DB_SSL_CA_FILE: /run/secrets/digitalocean_mysql_ca
+  WORDPRESS_TABLE_PREFIX: wp_${SERVICE_USER_TABLEPREFIX}_
+  WP_HOME: ${WP_HOME:?Set WP_HOME}
+  WP_SITEURL: ${WP_SITEURL:?Set WP_SITEURL}
+  REDIS_PASSWORD_FILE: /run/secrets/redis_password
+  BAOCACHE_METRICS_URL: http://baocache-metrics:8080/v1/cache
+  BAOCACHE_METRICS_TOKEN_FILE: /run/baocache-secrets/metrics-token
+  BAOCACHE_PURGE_URL: http://nginx/__baocache/purge
+  BAOCACHE_PURGE_PASSWORD_FILE: /run/baocache-secrets/purge-password
+  REDIS_PREFIX: wp_${SERVICE_USER_REDISPREFIX}
+  WP_DEBUG: ${WP_DEBUG:-false}
+  WORDPRESS_AUTH_KEY_FILE: /run/secrets/wordpress_auth_key
+  WORDPRESS_SECURE_AUTH_KEY_FILE: /run/secrets/wordpress_secure_auth_key
+  WORDPRESS_LOGGED_IN_KEY_FILE: /run/secrets/wordpress_logged_in_key
+  WORDPRESS_NONCE_KEY_FILE: /run/secrets/wordpress_nonce_key
+  WORDPRESS_AUTH_SALT_FILE: /run/secrets/wordpress_auth_salt
+  WORDPRESS_SECURE_AUTH_SALT_FILE: /run/secrets/wordpress_secure_auth_salt
+  WORDPRESS_LOGGED_IN_SALT_FILE: /run/secrets/wordpress_logged_in_salt
+  WORDPRESS_NONCE_SALT_FILE: /run/secrets/wordpress_nonce_salt
+  WORDPRESS_CONFIG_EXTRA: |
+    define('WP_ENVIRONMENT_TYPE', 'production');
+    define('WP_HOME', getenv('WP_HOME'));
+    define('WP_SITEURL', getenv('WP_SITEURL'));
+    define('FORCE_SSL_ADMIN', true);
+    define('DISALLOW_FILE_EDIT', true);
+    define('DISALLOW_UNFILTERED_HTML', true);
+    if (!defined('WP_DEBUG')) {
+        define('WP_DEBUG', filter_var(getenv('WP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN));
+    }
+    define('WP_DEBUG_DISPLAY', false);
+    define('WP_DEBUG_LOG', false);
+    @ini_set('display_errors', '0');
+    define('WP_POST_REVISIONS', 10);
+    define('EMPTY_TRASH_DAYS', 30);
+    define('WP_AUTO_UPDATE_CORE', 'minor');
+    define('AUTOMATIC_UPDATER_DISABLED', false);
+    define('WP_MEMORY_LIMIT', '256M');
+    define('WP_MAX_MEMORY_LIMIT', '512M');
+    define('DISABLE_WP_CRON', true);
+    define('WP_CACHE', true);
+    $$psm_read_secret = static function (string $$name): string {
+        $$path = getenv($$name . '_FILE');
+        if (!is_string($$path) || $$path === '' || !is_readable($$path)) {
+            return '';
+        }
+        $$size = filesize($$path);
+        if ($$size === false || $$size < 1 || $$size > 8192) {
+            return '';
+        }
+        $$value = file_get_contents($$path);
+        return is_string($$value) ? trim($$value) : '';
+    };
+    define('WP_REDIS_HOST', 'redis');
+    define('WP_REDIS_PORT', 6379);
+    define('WP_REDIS_CLIENT', 'phpredis');
+    define('WP_REDIS_PASSWORD', $$psm_read_secret('REDIS_PASSWORD'));
+    define('WP_REDIS_DATABASE', 0);
+    define('WP_REDIS_PREFIX', (getenv('REDIS_PREFIX') ?: 'wp') . ':');
+    define('WP_REDIS_TIMEOUT', 1);
+    define('WP_REDIS_READ_TIMEOUT', 1);
+    define('WP_REDIS_GRACEFUL', true);
+    define('WP_REDIS_SELECTIVE_FLUSH', true);
+    define('WP_REDIS_DISABLE_BANNERS', true);
+    define(
+        'MYSQL_CLIENT_FLAGS',
+        MYSQLI_CLIENT_SSL | MYSQLI_CLIENT_SSL_VERIFY_SERVER_CERT
+    );
+    if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && strpos($$_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) {
+        $$_SERVER['HTTPS'] = 'on';
+    }
+
+x-wordpress-secrets: &wordpress-secrets
+  - wordpress_db_password
+  - redis_password
+  - digitalocean_mysql_ca
+  - wordpress_auth_key
+  - wordpress_secure_auth_key
+  - wordpress_logged_in_key
+  - wordpress_nonce_key
+  - wordpress_auth_salt
+  - wordpress_secure_auth_salt
+  - wordpress_logged_in_salt
+  - wordpress_nonce_salt
+
+services:
+  baocache-secrets:
+    build:
+      context: .
+      dockerfile: secrets/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - baocache_secrets:/data
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /data/metrics-token && test -s /data/purge-password && test -s /data/purge.htpasswd"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+      start_period: 2s
+    mem_limit: 32m
+    cpus: 0.10
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 25
+    logging:
+      options:
+        max-size: "2m"
+        max-file: "2"
+
+  redis:
+    build:
+      context: .
+      dockerfile: redis/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 10s
+    environment:
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+    command:
+      - /usr/local/bin/redis-secure-entrypoint.sh
+    secrets:
+      - redis_password
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$(tr -d '\\r\\n' < /run/secrets/redis_password)\" redis-cli --no-auth-warning ping | grep -qx PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    mem_limit: 384m
+    cpus: 0.50
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 100
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: php/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      <<: *wordpress-environment
+      SYNC_BUNDLED_PLUGINS: "true"
+      SYNC_BUNDLED_THEMES: "true"
+      AUTO_ACTIVATE_BUNDLED_PLUGINS: "redis-cache power-schedule-manager baocache"
+      AUTO_ACTIVATE_BUNDLED_THEME: "cupdienlamdong"
+      # Admin-only read-only audit: token is not exposed to the cron container.
+      BAOCACHE_CLOUDFLARE_AUDIT_ENABLED: ${BAOCACHE_CLOUDFLARE_AUDIT_ENABLED:-false}
+      BAOCACHE_CLOUDFLARE_ZONE_ID: ${BAOCACHE_CLOUDFLARE_ZONE_ID:-}
+      BAOCACHE_CLOUDFLARE_API_TOKEN: ${BAOCACHE_CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      - wordpress_data:/var/www/html
+      - baocache_secrets:/run/baocache-secrets:ro
+    secrets: *wordpress-secrets
+    depends_on:
+      baocache-secrets:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t >/dev/null 2>&1 && php -r '$$socket = @fsockopen(\"127.0.0.1\", 9000); if (!$$socket) { exit(1); } fclose($$socket);'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    mem_limit: 1536m
+    cpus: 1.50
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 200
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  wordpress-cron:
+    build:
+      context: .
+      dockerfile: php/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 10s
+    environment:
+      <<: *wordpress-environment
+      SYNC_BUNDLED_PLUGINS: "false"
+      SYNC_BUNDLED_THEMES: "false"
+    volumes:
+      - wordpress_data:/var/www/html
+      - baocache_secrets:/run/baocache-secrets:ro
+    secrets: *wordpress-secrets
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          php /var/www/html/wp-cron.php >/proc/1/fd/1 2>/proc/1/fd/2 || true
+          sleep 60
+        done
+    exclude_from_hc: true
+    mem_limit: 256m
+    cpus: 0.25
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 50
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 10s
+    expose:
+      - "80"
+    volumes:
+      - wordpress_data:/var/www/html:ro
+      - baocache_runtime:/var/lib/baocache
+      - baocache_secrets:/run/baocache-secrets:ro
+    depends_on:
+      baocache-secrets:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "test -r /etc/nginx/modules/ngx_http_cache_purge_module.so && test -r /run/baocache-secrets/purge.htpasswd && nginx -t >/dev/null 2>&1 && wget -qO- http://127.0.0.1/healthz | grep -q '^ok$'"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    mem_limit: 256m
+    cpus: 0.50
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 100
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  baocache-metrics:
+    build:
+      context: .
+      dockerfile: metrics/Dockerfile
+    restart: unless-stopped
+    environment:
+      BAOCACHE_METRICS_TOKEN_FILE: /run/baocache-secrets/metrics-token
+    volumes:
+      - baocache_runtime:/data
+      - baocache_secrets:/run/baocache-secrets:ro
+    depends_on:
+      baocache-secrets:
+        condition: service_healthy
+      nginx:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    mem_limit: 96m
+    cpus: 0.25
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 50
+
+volumes:
+  wordpress_data:
+  baocache_runtime:
+  baocache_secrets:
+
+secrets:
+  wordpress_db_password:
+    environment: DB_PASSWORD
+  redis_password:
+    environment: SERVICE_PASSWORD_64_REDIS
+  digitalocean_mysql_ca:
+    environment: DB_SSL_CA
+  wordpress_auth_key:
+    environment: SERVICE_PASSWORD_64_WP_AUTH_KEY
+  wordpress_secure_auth_key:
+    environment: SERVICE_PASSWORD_64_WP_SECURE_AUTH_KEY
+  wordpress_logged_in_key:
+    environment: SERVICE_PASSWORD_64_WP_LOGGED_IN_KEY
+  wordpress_nonce_key:
+    environment: SERVICE_PASSWORD_64_WP_NONCE_KEY
+  wordpress_auth_salt:
+    environment: SERVICE_PASSWORD_64_WP_AUTH_SALT
+  wordpress_secure_auth_salt:
+    environment: SERVICE_PASSWORD_64_WP_SECURE_AUTH_SALT
+  wordpress_logged_in_salt:
+    environment: SERVICE_PASSWORD_64_WP_LOGGED_IN_SALT
+  wordpress_nonce_salt:
+    environment: SERVICE_PASSWORD_64_WP_NONCE_SALT

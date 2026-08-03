@@ -1,0 +1,8 @@
+http:
+  middlewares:
+    cupdienlamdong-errors:
+      errors:
+        status:
+          - "500-599"
+        service: cupdien-maintenance@docker
+        query: "/?status={status}"
